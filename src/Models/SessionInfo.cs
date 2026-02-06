@@ -26,12 +26,7 @@ internal class SessionInfo
     public int Pid { get; set; }
 
     /// <summary>
-    /// Gets or sets the process ID of the Copilot CLI process running in a terminal.
+    /// Gets or sets the process ID of the cmd.exe hosting the Copilot CLI process.
     /// </summary>
     public int CopilotPid { get; set; }
-
-    /// <summary>
-    /// Gets or sets the terminal window handle for focus tracking.
-    /// </summary>
-    public long WindowHandle { get; set; }
 }

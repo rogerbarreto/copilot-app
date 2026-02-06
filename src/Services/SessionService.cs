@@ -96,12 +96,6 @@ internal class SessionService
                     copilotPid = cpProp.GetInt32();
                 }
 
-                long windowHandle = 0;
-                if (entry.TryGetProperty("windowHandle", out var whProp) && whProp.ValueKind == JsonValueKind.Number)
-                {
-                    windowHandle = whProp.GetInt64();
-                }
-
                 var workspaceFile = Path.Combine(sessionStateDir, sessionId, "workspace.yaml");
                 if (!File.Exists(workspaceFile))
                 {
@@ -112,7 +106,6 @@ internal class SessionService
                 if (session != null)
                 {
                     session.CopilotPid = copilotPid;
-                    session.WindowHandle = windowHandle;
                     sessions.Add(session);
                 }
             }

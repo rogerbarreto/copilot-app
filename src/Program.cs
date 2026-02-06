@@ -192,12 +192,12 @@ internal class Program
         {
             var activeSessions = SessionService.GetActiveSessions(s_pidRegistryFile, SessionStateDir);
             var existing = activeSessions.FirstOrDefault(s => s.Id == resumeSessionId);
-            if (existing != null)
+            if (existing != null && existing.CopilotPid > 0)
             {
-                // All copilot tabs share the same Windows Terminal window titled "GitHub Copilot"
-                if (WindowFocusService.TryFocusWindowByTitle("GitHub Copilot"))
+                // CopilotPid stores the cmd.exe PID that hosts the copilot process
+                if (WindowFocusService.TryFocusProcessWindow(existing.CopilotPid))
                 {
-                    LogService.Log($"Focused terminal for session {resumeSessionId}", s_logFile);
+                    LogService.Log($"Focused terminal (cmd PID {existing.CopilotPid}) for session {resumeSessionId}", s_logFile);
                     return;
                 }
             }
@@ -331,8 +331,9 @@ internal class Program
 
             if (sessionId != null)
             {
-                PidRegistryService.UpdatePidSessionId(myPid, sessionId, s_pidRegistryFile);
-                LogService.Log($"Mapped PID {myPid} to session {sessionId}", s_logFile);
+                int cmdPid = s_copilotProcess?.Id ?? 0;
+                PidRegistryService.UpdatePidSessionId(myPid, sessionId, s_pidRegistryFile, copilotPid: cmdPid);
+                LogService.Log($"Mapped PID {myPid} to session {sessionId}, cmd PID {cmdPid}", s_logFile);
             }
 
             LogService.Log("Updating jump list...", s_logFile);

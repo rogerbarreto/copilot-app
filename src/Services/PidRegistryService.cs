@@ -36,13 +36,12 @@ internal class PidRegistryService
     internal void UnregisterPid(int pid) => UnregisterPid(pid, this._pidRegistryFile);
 
     /// <summary>
-    /// Associates a session ID and copilot process ID with the specified launcher process ID.
+    /// Associates a session ID and cmd process ID with the specified launcher process ID.
     /// </summary>
     /// <param name="pid">The launcher process ID to update.</param>
     /// <param name="sessionId">The session ID to associate with the process.</param>
-    /// <param name="copilotPid">The copilot CLI process ID.</param>
-    /// <param name="windowHandle">The terminal window handle for focus tracking.</param>
-    internal void UpdatePidSessionId(int pid, string sessionId, int copilotPid = 0, long windowHandle = 0) => UpdatePidSessionId(pid, sessionId, this._pidRegistryFile, copilotPid, windowHandle);
+    /// <param name="copilotPid">The cmd.exe process ID hosting the copilot CLI.</param>
+    internal void UpdatePidSessionId(int pid, string sessionId, int copilotPid = 0) => UpdatePidSessionId(pid, sessionId, this._pidRegistryFile, copilotPid);
 
     /// <summary>
     /// Registers a process ID in the PID registry file, creating the directory and file if needed.
@@ -75,14 +74,13 @@ internal class PidRegistryService
     }
 
     /// <summary>
-    /// Updates the session ID and copilot process ID associated with a process ID in the PID registry file.
+    /// Updates the session ID and cmd process ID associated with a process ID in the PID registry file.
     /// </summary>
     /// <param name="pid">The launcher process ID to update.</param>
     /// <param name="sessionId">The session ID to associate with the process.</param>
     /// <param name="pidRegistryFile">Path to the PID registry JSON file.</param>
-    /// <param name="copilotPid">The copilot CLI process ID.</param>
-    /// <param name="windowHandle">The terminal window handle for focus tracking.</param>
-    internal static void UpdatePidSessionId(int pid, string sessionId, string pidRegistryFile, int copilotPid = 0, long windowHandle = 0)
+    /// <param name="copilotPid">The cmd.exe process ID hosting the copilot CLI.</param>
+    internal static void UpdatePidSessionId(int pid, string sessionId, string pidRegistryFile, int copilotPid = 0)
     {
         try
         {
@@ -95,7 +93,7 @@ internal class PidRegistryService
             var registry = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json) ?? [];
 
             registry[pid.ToString()] = JsonSerializer.Deserialize<JsonElement>(
-                JsonSerializer.Serialize(new { started = System.DateTime.Now.ToString("o"), sessionId, copilotPid, windowHandle }));
+                JsonSerializer.Serialize(new { started = System.DateTime.Now.ToString("o"), sessionId, copilotPid }));
 
             File.WriteAllText(pidRegistryFile, JsonSerializer.Serialize(registry));
         }
