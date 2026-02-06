@@ -210,14 +210,21 @@ class SettingsForm : Form
             {
                 using var fbd = new FolderBrowserDialog();
                 if (fbd.ShowDialog() == DialogResult.OK && !string.IsNullOrEmpty(fbd.SelectedPath))
+                {
                     listBox.Items.Add(fbd.SelectedPath);
+                    listBox.SelectedIndex = listBox.Items.Count - 1;
+                }
             }
             else
             {
                 var value = PromptInput(addTitle, promptText, "");
                 if (!string.IsNullOrWhiteSpace(value))
+                {
                     listBox.Items.Add(value);
+                    listBox.SelectedIndex = listBox.Items.Count - 1;
+                }
             }
+            listBox.Focus();
         };
 
         var btnEdit = new Button { Text = "Edit", Width = 88 };
@@ -238,13 +245,20 @@ class SettingsForm : Form
                 if (value != null)
                     listBox.Items[listBox.SelectedIndex] = value;
             }
+            listBox.Focus();
         };
 
         var btnRemove = new Button { Text = "Remove", Width = 88 };
         btnRemove.Click += (s, e) =>
         {
-            if (listBox.SelectedIndex >= 0)
-                listBox.Items.RemoveAt(listBox.SelectedIndex);
+            int idx = listBox.SelectedIndex;
+            if (idx >= 0)
+            {
+                listBox.Items.RemoveAt(idx);
+                if (listBox.Items.Count > 0)
+                    listBox.SelectedIndex = Math.Min(idx, listBox.Items.Count - 1);
+                listBox.Focus();
+            }
         };
 
         var btnUp = new Button { Text = "Move Up", Width = 88 };
@@ -257,6 +271,7 @@ class SettingsForm : Form
                 listBox.Items.RemoveAt(idx);
                 listBox.Items.Insert(idx - 1, item);
                 listBox.SelectedIndex = idx - 1;
+                listBox.Focus();
             }
         };
 
@@ -270,6 +285,7 @@ class SettingsForm : Form
                 listBox.Items.RemoveAt(idx);
                 listBox.Items.Insert(idx + 1, item);
                 listBox.SelectedIndex = idx + 1;
+                listBox.Focus();
             }
         };
 
