@@ -8,8 +8,22 @@ using Microsoft.WindowsAPICodePack.Shell;
 
 namespace CopilotApp.Services;
 
+/// <summary>
+/// Manages Windows taskbar jump list entries for Copilot sessions.
+/// </summary>
 internal class JumpListService
 {
+    /// <summary>
+    /// Acquires a named mutex lock and updates the jump list, recording the update timestamp.
+    /// </summary>
+    /// <param name="updateLockName">Name of the mutex used to synchronize updates.</param>
+    /// <param name="lastUpdateFile">Path to the file storing the last update timestamp.</param>
+    /// <param name="launcherExePath">Path to the launcher executable.</param>
+    /// <param name="copilotExePath">Path to the Copilot executable for icon references.</param>
+    /// <param name="pidRegistryFile">Path to the PID registry JSON file.</param>
+    /// <param name="sessionStateDir">Path to the directory containing session state.</param>
+    /// <param name="logFile">Path to the log file.</param>
+    /// <param name="hiddenForm">The hidden form used for UI thread invocation, or <c>null</c>.</param>
     [ExcludeFromCodeCoverage]
     internal static void TryUpdateJumpListWithLock(string updateLockName, string lastUpdateFile, string launcherExePath, string copilotExePath, string pidRegistryFile, string sessionStateDir, string logFile, Form? hiddenForm)
     {
@@ -35,6 +49,12 @@ internal class JumpListService
         }
     }
 
+    /// <summary>
+    /// Determines whether a background jump list update should be performed based on the elapsed time.
+    /// </summary>
+    /// <param name="minInterval">Minimum interval between updates.</param>
+    /// <param name="lastUpdateFile">Path to the file storing the last update timestamp.</param>
+    /// <returns><c>true</c> if the minimum interval has elapsed since the last update; otherwise, <c>false</c>.</returns>
     internal static bool ShouldBackgroundUpdate(TimeSpan minInterval, string lastUpdateFile)
     {
         try
@@ -53,6 +73,18 @@ internal class JumpListService
         }
     }
 
+    /// <summary>
+    /// Continuously checks and updates the jump list at regular intervals until cancellation is requested.
+    /// </summary>
+    /// <param name="ct">Cancellation token to stop the loop.</param>
+    /// <param name="updateLockName">Name of the mutex used to synchronize updates.</param>
+    /// <param name="lastUpdateFile">Path to the file storing the last update timestamp.</param>
+    /// <param name="launcherExePath">Path to the launcher executable.</param>
+    /// <param name="copilotExePath">Path to the Copilot executable for icon references.</param>
+    /// <param name="pidRegistryFile">Path to the PID registry JSON file.</param>
+    /// <param name="sessionStateDir">Path to the directory containing session state.</param>
+    /// <param name="logFile">Path to the log file.</param>
+    /// <param name="hiddenForm">The hidden form used for UI thread invocation, or <c>null</c>.</param>
     [ExcludeFromCodeCoverage]
     internal static void UpdaterLoop(CancellationToken ct, string updateLockName, string lastUpdateFile, string launcherExePath, string copilotExePath, string pidRegistryFile, string sessionStateDir, string logFile, Form? hiddenForm)
     {
@@ -70,6 +102,15 @@ internal class JumpListService
         }
     }
 
+    /// <summary>
+    /// Rebuilds the Windows taskbar jump list with current active sessions and standard tasks.
+    /// </summary>
+    /// <param name="launcherExePath">Path to the launcher executable.</param>
+    /// <param name="copilotExePath">Path to the Copilot executable for icon references.</param>
+    /// <param name="pidRegistryFile">Path to the PID registry JSON file.</param>
+    /// <param name="sessionStateDir">Path to the directory containing session state.</param>
+    /// <param name="logFile">Path to the log file.</param>
+    /// <param name="hiddenForm">The hidden form used for UI thread invocation, or <c>null</c>.</param>
     [ExcludeFromCodeCoverage]
     internal static void UpdateJumpList(string launcherExePath, string copilotExePath, string pidRegistryFile, string sessionStateDir, string logFile, Form? hiddenForm)
     {

@@ -10,6 +10,9 @@ using CopilotApp.Services;
 
 namespace CopilotApp.Forms;
 
+/// <summary>
+/// Main application form providing session management and settings configuration.
+/// </summary>
 [ExcludeFromCodeCoverage]
 internal class MainForm : Form
 {
@@ -26,8 +29,15 @@ internal class MainForm : Form
     private readonly ListView _idesList;
     private readonly TextBox _workDirBox;
 
+    /// <summary>
+    /// Gets the identifier of the currently selected session.
+    /// </summary>
     public string? SelectedSessionId { get; private set; }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MainForm"/> class.
+    /// </summary>
+    /// <param name="initialTab">The zero-based index of the tab to display on startup.</param>
     public MainForm(int initialTab = 0)
     {
         this.Text = "Copilot App";
@@ -265,6 +275,10 @@ internal class MainForm : Form
         this.Close();
     }
 
+    /// <summary>
+    /// Switches the main tab control to the specified tab and brings the form to the foreground.
+    /// </summary>
+    /// <param name="tabIndex">The zero-based index of the tab to activate.</param>
     public void SwitchToTab(int tabIndex)
     {
         if (tabIndex >= 0 && tabIndex < this._mainTabs.TabPages.Count)
@@ -326,8 +340,17 @@ internal class MainForm : Form
         this._workDirBox.Text = fresh.DefaultWorkDir;
     }
 
+    /// <summary>
+    /// Loads all named sessions from the default session state directory.
+    /// </summary>
+    /// <returns>A list of named sessions.</returns>
     internal static List<NamedSession> LoadNamedSessions() => SessionService.LoadNamedSessions(Program.SessionStateDir);
 
+    /// <summary>
+    /// Loads all named sessions from the specified session state directory.
+    /// </summary>
+    /// <param name="sessionStateDir">The directory containing session state data.</param>
+    /// <returns>A list of named sessions.</returns>
     internal static List<NamedSession> LoadNamedSessions(string sessionStateDir) => SessionService.LoadNamedSessions(sessionStateDir);
 
     private FlowLayoutPanel CreateListButtons(ListBox listBox, string promptText, string addTitle, bool addBrowse)

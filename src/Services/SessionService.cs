@@ -7,19 +7,37 @@ using CopilotApp.Models;
 
 namespace CopilotApp.Services;
 
+/// <summary>
+/// Provides operations for discovering and managing Copilot sessions.
+/// </summary>
 internal class SessionService
 {
     private readonly string _pidRegistryFile;
     private readonly string _sessionStateDir;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SessionService"/> class.
+    /// </summary>
+    /// <param name="pidRegistryFile">Path to the PID registry JSON file.</param>
+    /// <param name="sessionStateDir">Path to the directory containing session state.</param>
     internal SessionService(string pidRegistryFile, string sessionStateDir)
     {
         this._pidRegistryFile = pidRegistryFile;
         this._sessionStateDir = sessionStateDir;
     }
 
+    /// <summary>
+    /// Gets active sessions using the configured PID registry and session state directory.
+    /// </summary>
+    /// <returns>A list of currently active sessions.</returns>
     internal List<SessionInfo> GetActiveSessions() => GetActiveSessions(this._pidRegistryFile, this._sessionStateDir);
 
+    /// <summary>
+    /// Gets active sessions by cross-referencing the PID registry with running processes.
+    /// </summary>
+    /// <param name="pidRegistryFile">Path to the PID registry JSON file.</param>
+    /// <param name="sessionStateDir">Path to the directory containing session state.</param>
+    /// <returns>A list of currently active sessions.</returns>
     internal static List<SessionInfo> GetActiveSessions(string pidRegistryFile, string sessionStateDir)
     {
         var sessions = new List<SessionInfo>();
@@ -107,6 +125,12 @@ internal class SessionService
         return sessions;
     }
 
+    /// <summary>
+    /// Parses a workspace YAML file to extract session information.
+    /// </summary>
+    /// <param name="path">Path to the workspace.yaml file.</param>
+    /// <param name="pid">The process ID associated with the session.</param>
+    /// <returns>A <see cref="SessionInfo"/> if parsing succeeds; otherwise, <c>null</c>.</returns>
     internal static SessionInfo? ParseWorkspace(string path, int pid)
     {
         try
@@ -150,6 +174,11 @@ internal class SessionService
         }
     }
 
+    /// <summary>
+    /// Loads named sessions from the session state directory, ordered by most recently modified.
+    /// </summary>
+    /// <param name="sessionStateDir">Path to the directory containing session state.</param>
+    /// <returns>A list of up to 50 named sessions with summaries.</returns>
     internal static List<NamedSession> LoadNamedSessions(string sessionStateDir)
     {
         var results = new List<NamedSession>();
@@ -222,6 +251,11 @@ internal class SessionService
         return results;
     }
 
+    /// <summary>
+    /// Finds the Git repository root by traversing parent directories from the given path.
+    /// </summary>
+    /// <param name="startPath">The directory path to start searching from.</param>
+    /// <returns>The Git repository root path, or <c>null</c> if not found.</returns>
     internal static string? FindGitRoot(string startPath)
     {
         var dir = startPath;

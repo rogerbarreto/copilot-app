@@ -4,21 +4,50 @@ using System.Text.Json;
 
 namespace CopilotApp.Services;
 
+/// <summary>
+/// Manages process ID registration for tracking running Copilot application instances.
+/// </summary>
 internal class PidRegistryService
 {
     private readonly string _copilotDir;
     private readonly string _pidRegistryFile;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PidRegistryService"/> class.
+    /// </summary>
+    /// <param name="copilotDir">Path to the Copilot data directory.</param>
+    /// <param name="pidRegistryFile">Path to the PID registry JSON file.</param>
     internal PidRegistryService(string copilotDir, string pidRegistryFile)
     {
         this._copilotDir = copilotDir;
         this._pidRegistryFile = pidRegistryFile;
     }
 
+    /// <summary>
+    /// Registers the specified process ID in the configured PID registry.
+    /// </summary>
+    /// <param name="pid">The process ID to register.</param>
     internal void RegisterPid(int pid) => RegisterPid(pid, this._copilotDir, this._pidRegistryFile);
+
+    /// <summary>
+    /// Removes the specified process ID from the configured PID registry.
+    /// </summary>
+    /// <param name="pid">The process ID to unregister.</param>
     internal void UnregisterPid(int pid) => UnregisterPid(pid, this._pidRegistryFile);
+
+    /// <summary>
+    /// Associates a session ID with the specified process ID in the configured PID registry.
+    /// </summary>
+    /// <param name="pid">The process ID to update.</param>
+    /// <param name="sessionId">The session ID to associate with the process.</param>
     internal void UpdatePidSessionId(int pid, string sessionId) => UpdatePidSessionId(pid, sessionId, this._pidRegistryFile);
 
+    /// <summary>
+    /// Registers a process ID in the PID registry file, creating the directory and file if needed.
+    /// </summary>
+    /// <param name="pid">The process ID to register.</param>
+    /// <param name="copilotDir">Path to the Copilot data directory.</param>
+    /// <param name="pidRegistryFile">Path to the PID registry JSON file.</param>
     internal static void RegisterPid(int pid, string copilotDir, string pidRegistryFile)
     {
         try
@@ -43,6 +72,12 @@ internal class PidRegistryService
         catch { }
     }
 
+    /// <summary>
+    /// Updates the session ID associated with a process ID in the PID registry file.
+    /// </summary>
+    /// <param name="pid">The process ID to update.</param>
+    /// <param name="sessionId">The session ID to associate with the process.</param>
+    /// <param name="pidRegistryFile">Path to the PID registry JSON file.</param>
     internal static void UpdatePidSessionId(int pid, string sessionId, string pidRegistryFile)
     {
         try
@@ -63,6 +98,11 @@ internal class PidRegistryService
         catch { }
     }
 
+    /// <summary>
+    /// Removes a process ID from the PID registry file.
+    /// </summary>
+    /// <param name="pid">The process ID to remove.</param>
+    /// <param name="pidRegistryFile">Path to the PID registry JSON file.</param>
     internal static void UnregisterPid(int pid, string pidRegistryFile)
     {
         try

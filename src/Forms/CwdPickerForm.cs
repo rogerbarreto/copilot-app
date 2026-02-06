@@ -8,9 +8,17 @@ using System.Windows.Forms;
 
 namespace CopilotApp.Forms;
 
+/// <summary>
+/// Provides a dialog for selecting a working directory from previously used directories or browsing for a new one.
+/// </summary>
 [ExcludeFromCodeCoverage]
 internal static class CwdPickerForm
 {
+    /// <summary>
+    /// Displays the working directory picker dialog, listing previously used directories sorted by usage frequency.
+    /// </summary>
+    /// <param name="defaultWorkDir">The default directory path used when browsing for a new folder.</param>
+    /// <returns>The selected directory path, or <c>null</c> if the dialog was cancelled.</returns>
     internal static string? ShowCwdPicker(string defaultWorkDir)
     {
         // Scan all session workspace.yaml files to collect CWDs and their frequency

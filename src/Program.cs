@@ -13,25 +13,42 @@ using CopilotApp.Forms;
 
 [assembly: InternalsVisibleTo("CopilotApp.Tests")]
 
+/// <summary>
+/// Entry point for the Copilot launcher application.
+/// </summary>
 internal class Program
 {
     private const string UpdaterMutexName = "Global\\CopilotJumpListUpdater";
     private const string UpdateLockName = "Global\\CopilotJumpListUpdateLock";
 
     private static readonly string s_copilotDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".copilot");
+    /// <summary>
+    /// Directory path for persisted session state.
+    /// </summary>
     internal static readonly string SessionStateDir = Path.Combine(s_copilotDir, "session-state");
     private static readonly string s_pidRegistryFile = Path.Combine(s_copilotDir, "active-pids.json");
     private static readonly string s_signalFile = Path.Combine(s_copilotDir, "ui-signal.txt");
     private static readonly string s_lastUpdateFile = Path.Combine(s_copilotDir, "jumplist-lastupdate.txt");
     private static readonly string s_logFile = Path.Combine(s_copilotDir, "launcher.log");
     private static readonly string s_launcherExePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName ?? "";
+    /// <summary>
+    /// Absolute path to the Copilot CLI executable.
+    /// </summary>
     internal static readonly string CopilotExePath = CopilotLocator.FindCopilotExe();
 
+    /// <summary>
+    /// Current launcher settings loaded from disk.
+    /// </summary>
     internal static LauncherSettings _settings = null!;
     private static Form? s_hiddenForm;
     private static Process? s_copilotProcess;
     private static MainForm? s_mainForm;
 
+    /// <summary>
+    /// Parses command-line arguments into a structured <see cref="ParsedArgs"/> result.
+    /// </summary>
+    /// <param name="args">The command-line arguments to parse.</param>
+    /// <returns>A <see cref="ParsedArgs"/> instance containing the parsed values.</returns>
     internal static ParsedArgs ParseArguments(string[] args)
     {
         string? resumeSessionId = null;

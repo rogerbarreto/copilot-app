@@ -8,9 +8,16 @@ using CopilotApp.Services;
 
 namespace CopilotApp.Forms;
 
+/// <summary>
+/// Provides a picker dialog for opening a session's working directory or repository in a configured IDE.
+/// </summary>
 [ExcludeFromCodeCoverage]
 internal static class IdePickerForm
 {
+    /// <summary>
+    /// Displays an IDE picker dialog and opens the selected IDE for the specified session.
+    /// </summary>
+    /// <param name="sessionId">The identifier of the session to open in an IDE.</param>
     internal static void OpenIdeForSession(string sessionId)
     {
         if (Program._settings.Ides.Count == 0)
@@ -138,6 +145,11 @@ internal static class IdePickerForm
         form.ShowDialog();
     }
 
+    /// <summary>
+    /// Launches the specified IDE executable with the given folder path as an argument.
+    /// </summary>
+    /// <param name="idePath">The file path to the IDE executable.</param>
+    /// <param name="folderPath">The folder path to open in the IDE.</param>
     internal static void LaunchIde(string idePath, string folderPath)
     {
         try
