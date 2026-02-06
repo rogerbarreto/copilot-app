@@ -607,8 +607,8 @@ class Program
             if (workDir == null) return;
         }
 
-        // When resuming, use the session's original CWD
-        if (resumeSessionId != null && workDir == null)
+        // When resuming, always use the session's original CWD
+        if (resumeSessionId != null)
         {
             var wsFile = Path.Combine(SessionStateDir, resumeSessionId, "workspace.yaml");
             if (File.Exists(wsFile))
