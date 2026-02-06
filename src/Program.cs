@@ -190,10 +190,14 @@ internal class Program
         {
             var activeSessions = SessionService.GetActiveSessions(s_pidRegistryFile, SessionStateDir);
             var existing = activeSessions.FirstOrDefault(s => s.Id == resumeSessionId);
-            if (existing != null && existing.CopilotPid > 0 && WindowFocusService.TryFocusProcess(existing.CopilotPid))
+            if (existing != null)
             {
-                LogService.Log($"Focused existing session {resumeSessionId} (copilot PID {existing.CopilotPid})", s_logFile);
-                return;
+                string expectedTitle = $"Copilot [{resumeSessionId}]";
+                if (WindowFocusService.TryFocusWindowByTitle(expectedTitle))
+                {
+                    LogService.Log($"Focused existing session {resumeSessionId} by title", s_logFile);
+                    return;
+                }
             }
         }
 
@@ -296,22 +300,18 @@ internal class Program
 
         var settingsArgs = _settings.BuildCopilotArgs(copilotArgs.ToArray());
 
+        // Use a unique window title so we can find this session's terminal window
+        string windowTitle = $"Copilot [{resumeSessionId ?? "new-" + myPid}]";
         var psi = new ProcessStartInfo
         {
-            FileName = CopilotExePath,
-            Arguments = settingsArgs,
+            FileName = "cmd.exe",
+            Arguments = $"/c \"title {windowTitle} && \"{CopilotExePath}\" {settingsArgs}\"",
             WorkingDirectory = workDir,
-            UseShellExecute = false,
-            CreateNoWindow = false
+            UseShellExecute = true
         };
 
         s_copilotProcess = Process.Start(psi);
-        LogService.Log($"Started copilot with PID: {s_copilotProcess?.Id}", s_logFile);
-
-        // Wait briefly for the console window to be created, then capture its handle
-        Thread.Sleep(500);
-        IntPtr copilotWindowHandle = s_copilotProcess?.MainWindowHandle ?? IntPtr.Zero;
-        LogService.Log($"Copilot window handle: {copilotWindowHandle}", s_logFile);
+        LogService.Log($"Started copilot via cmd with PID: {s_copilotProcess?.Id}", s_logFile);
 
         // Update jump list after session creation delay
         var timer = new System.Windows.Forms.Timer { Interval = 3000 };
@@ -334,6 +334,14 @@ internal class Program
                 int copilotPid = s_copilotProcess?.Id ?? 0;
                 PidRegistryService.UpdatePidSessionId(myPid, sessionId, s_pidRegistryFile, copilotPid);
                 LogService.Log($"Mapped PID {myPid} to session {sessionId} (copilot PID {copilotPid})", s_logFile);
+
+                // Update the console window title to include session ID for focus tracking
+                if (resumeSessionId == null)
+                {
+                    string newTitle = $"Copilot [{sessionId}]";
+                    WindowFocusService.TrySetWindowTitle(windowTitle, newTitle);
+                    windowTitle = newTitle;
+                }
             }
 
             LogService.Log("Updating jump list...", s_logFile);
