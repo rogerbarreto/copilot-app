@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationIcon>copilot.ico</ApplicationIcon>
+    <AssemblyName>CopilotPermissive</AssemblyName>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>false</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="copilot.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft-WindowsAPICodePack-Shell" Version="1.1.5" />
+  </ItemGroup>
+</Project>
