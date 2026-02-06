@@ -28,6 +28,9 @@ class LauncherSettings
     [JsonPropertyName("defaultWorkDir")]
     public string DefaultWorkDir { get; set; } = "";
 
+    [JsonPropertyName("ides")]
+    public List<IdeEntry> Ides { get; set; } = new();
+
     public static LauncherSettings Load()
     {
         try
@@ -81,6 +84,17 @@ class LauncherSettings
     }
 }
 
+class IdeEntry
+{
+    [JsonPropertyName("path")]
+    public string Path { get; set; } = "";
+
+    [JsonPropertyName("description")]
+    public string Description { get; set; } = "";
+
+    public override string ToString() => string.IsNullOrEmpty(Description) ? Path : $"{Description}  —  {Path}";
+}
+
 #endregion
 
 #region Settings Dialog
@@ -90,6 +104,7 @@ class SettingsForm : Form
     readonly LauncherSettings _settings;
     readonly ListBox _toolsList;
     readonly ListBox _dirsList;
+    readonly ListView _idesList;
 
     public SettingsForm(LauncherSettings settings, string copilotExePath)
     {
@@ -108,7 +123,7 @@ class SettingsForm : Form
         }
         catch { }
 
-        // Tab control for tools vs dirs
+        // Tab control for tools vs dirs vs ides
         var tabs = new TabControl { Dock = DockStyle.Fill };
 
         // --- Allowed Tools tab ---
@@ -131,8 +146,32 @@ class SettingsForm : Form
         dirsTab.Controls.Add(_dirsList);
         dirsTab.Controls.Add(dirsButtons);
 
+        // --- IDEs tab ---
+        var idesTab = new TabPage("IDEs");
+        _idesList = new ListView
+        {
+            Dock = DockStyle.Fill,
+            View = View.Details,
+            FullRowSelect = true,
+            MultiSelect = false,
+            GridLines = true
+        };
+        _idesList.Columns.Add("Description", 200);
+        _idesList.Columns.Add("Path", 400);
+        foreach (var ide in _settings.Ides)
+        {
+            var item = new ListViewItem(ide.Description);
+            item.SubItems.Add(ide.Path);
+            _idesList.Items.Add(item);
+        }
+
+        var ideButtons = CreateIdeButtons();
+        idesTab.Controls.Add(_idesList);
+        idesTab.Controls.Add(ideButtons);
+
         tabs.TabPages.Add(toolsTab);
         tabs.TabPages.Add(dirsTab);
+        tabs.TabPages.Add(idesTab);
 
         // --- Default Work Dir ---
         var workDirPanel = new Panel { Dock = DockStyle.Top, Height = 40, Padding = new Padding(8, 8, 8, 4) };
@@ -177,6 +216,9 @@ class SettingsForm : Form
             _settings.AllowedTools = _toolsList.Items.Cast<string>().ToList();
             _settings.AllowedDirs = _dirsList.Items.Cast<string>().ToList();
             _settings.DefaultWorkDir = workDirBox.Text.Trim();
+            _settings.Ides = new List<IdeEntry>();
+            foreach (ListViewItem item in _idesList.Items)
+                _settings.Ides.Add(new IdeEntry { Description = item.Text, Path = item.SubItems[1].Text });
             _settings.Save();
             DialogResult = DialogResult.OK;
             Close();
@@ -293,6 +335,105 @@ class SettingsForm : Form
         return panel;
     }
 
+    Panel CreateIdeButtons()
+    {
+        var panel = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Right,
+            Width = 100,
+            FlowDirection = FlowDirection.TopDown,
+            Padding = new Padding(4)
+        };
+
+        var btnAdd = new Button { Text = "Add", Width = 88 };
+        btnAdd.Click += (s, e) =>
+        {
+            var result = PromptIdeEntry("Add IDE", "", "");
+            if (result != null)
+            {
+                var item = new ListViewItem(result.Value.desc);
+                item.SubItems.Add(result.Value.path);
+                _idesList.Items.Add(item);
+                item.Selected = true;
+                _idesList.Focus();
+            }
+        };
+
+        var btnEdit = new Button { Text = "Edit", Width = 88 };
+        btnEdit.Click += (s, e) =>
+        {
+            if (_idesList.SelectedItems.Count == 0) return;
+            var sel = _idesList.SelectedItems[0];
+            var result = PromptIdeEntry("Edit IDE", sel.SubItems[1].Text, sel.Text);
+            if (result != null)
+            {
+                sel.Text = result.Value.desc;
+                sel.SubItems[1].Text = result.Value.path;
+            }
+            _idesList.Focus();
+        };
+
+        var btnRemove = new Button { Text = "Remove", Width = 88 };
+        btnRemove.Click += (s, e) =>
+        {
+            if (_idesList.SelectedItems.Count > 0)
+            {
+                int idx = _idesList.SelectedIndices[0];
+                _idesList.Items.RemoveAt(idx);
+                if (_idesList.Items.Count > 0)
+                {
+                    int newIdx = Math.Min(idx, _idesList.Items.Count - 1);
+                    _idesList.Items[newIdx].Selected = true;
+                }
+                _idesList.Focus();
+            }
+        };
+
+        panel.Controls.AddRange(new Control[] { btnAdd, btnEdit, btnRemove });
+        return panel;
+    }
+
+    static (string path, string desc)? PromptIdeEntry(string title, string defaultPath, string defaultDesc)
+    {
+        var form = new Form
+        {
+            Text = title,
+            Size = new Size(500, 190),
+            StartPosition = FormStartPosition.CenterParent,
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            MaximizeBox = false,
+            MinimizeBox = false
+        };
+
+        var lblDesc = new Label { Text = "Description:", Location = new Point(12, 15), AutoSize = true };
+        var txtDesc = new TextBox { Text = defaultDesc, Location = new Point(12, 35), Width = 455 };
+
+        var lblPath = new Label { Text = "Executable path:", Location = new Point(12, 65), AutoSize = true };
+        var txtPath = new TextBox { Text = defaultPath, Location = new Point(12, 85), Width = 410 };
+        var btnBrowse = new Button { Text = "...", Location = new Point(428, 84), Width = 40 };
+        btnBrowse.Click += (s, e) =>
+        {
+            using var ofd = new OpenFileDialog
+            {
+                Filter = "Executables (*.exe)|*.exe|All files (*.*)|*.*",
+                FileName = txtPath.Text
+            };
+            if (ofd.ShowDialog() == DialogResult.OK)
+                txtPath.Text = ofd.FileName;
+        };
+
+        var btnOk = new Button { Text = "OK", DialogResult = DialogResult.OK, Location = new Point(310, 118), Width = 75 };
+        var btnCancel = new Button { Text = "Cancel", DialogResult = DialogResult.Cancel, Location = new Point(392, 118), Width = 75 };
+
+        form.Controls.AddRange(new Control[] { lblDesc, txtDesc, lblPath, txtPath, btnBrowse, btnOk, btnCancel });
+        form.AcceptButton = btnOk;
+        form.CancelButton = btnCancel;
+
+        if (form.ShowDialog() == DialogResult.OK && !string.IsNullOrWhiteSpace(txtPath.Text))
+            return (txtPath.Text, txtDesc.Text);
+        return null;
+    }
+
     static string? PromptInput(string title, string label, string defaultValue)
     {
         var form = new Form
@@ -403,6 +544,7 @@ class Program
         string? resumeSessionId = null;
         bool openExisting = false;
         bool showSettings = false;
+        string? openIdeSessionId = null;
         string? workDir = null;
 
         for (int i = 0; i < args.Length; i++)
@@ -420,6 +562,11 @@ class Program
             {
                 showSettings = true;
             }
+            else if (args[i] == "--open-ide" && i + 1 < args.Length)
+            {
+                openIdeSessionId = args[i + 1];
+                i++;
+            }
             else
             {
                 workDir = args[i];
@@ -431,6 +578,13 @@ class Program
         {
             var settingsForm = new SettingsForm(_settings, CopilotExePath);
             settingsForm.ShowDialog();
+            return;
+        }
+
+        // If open-ide mode, show IDE picker for the given session
+        if (openIdeSessionId != null)
+        {
+            OpenIdeForSession(openIdeSessionId);
             return;
         }
 
@@ -664,6 +818,16 @@ class Program
                     WorkingDirectory = session.Cwd
                 };
                 category.AddJumpListItems(link);
+
+                if (_settings.Ides.Count > 0)
+                {
+                    var ideLink = new JumpListLink(LauncherExePath, $"  ↗ Open in IDE: {session.Summary}")
+                    {
+                        Arguments = $"--open-ide {session.Id}",
+                        IconReference = new IconReference(CopilotExePath, 0)
+                    };
+                    category.AddJumpListItems(ideLink);
+                }
             }
             jumpList.AddCustomCategories(category);
 
@@ -812,6 +976,146 @@ class Program
             };
         }
         catch { return null; }
+    }
+
+    #endregion
+
+    #region Open IDE
+
+    static void OpenIdeForSession(string sessionId)
+    {
+        if (_settings.Ides.Count == 0)
+        {
+            MessageBox.Show("No IDEs configured.\nGo to Settings → IDEs tab to add one.",
+                "Open in IDE", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        // Get session CWD
+        var workspaceFile = Path.Combine(SessionStateDir, sessionId, "workspace.yaml");
+        if (!File.Exists(workspaceFile))
+        {
+            MessageBox.Show("Session not found.", "Open in IDE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        string? cwd = null;
+        foreach (var line in File.ReadAllLines(workspaceFile))
+        {
+            if (line.StartsWith("cwd:")) { cwd = line[4..].Trim(); break; }
+        }
+
+        if (string.IsNullOrEmpty(cwd))
+        {
+            MessageBox.Show("Session has no working directory.", "Open in IDE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        // Find git repo root
+        var repoRoot = FindGitRoot(cwd);
+
+        // Build folder choices
+        var folderChoices = new List<(string label, string path)> { ($"CWD: {cwd}", cwd) };
+        if (repoRoot != null && !string.Equals(repoRoot, cwd, StringComparison.OrdinalIgnoreCase))
+            folderChoices.Add(($"Repo: {repoRoot}", repoRoot));
+
+        // Show picker dialog
+        var form = new Form
+        {
+            Text = "Open in IDE",
+            Size = new Size(500, 320),
+            StartPosition = FormStartPosition.CenterScreen,
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            MaximizeBox = false
+        };
+
+        try
+        {
+            var icon = Icon.ExtractAssociatedIcon(CopilotExePath);
+            if (icon != null) form.Icon = icon;
+        }
+        catch { }
+
+        // Folder selection
+        var lblFolder = new Label { Text = "Open folder:", Location = new Point(12, 12), AutoSize = true };
+        var folderCombo = new ComboBox
+        {
+            Location = new Point(12, 32),
+            Width = 455,
+            DropDownStyle = ComboBoxStyle.DropDownList
+        };
+        foreach (var (label, _) in folderChoices)
+            folderCombo.Items.Add(label);
+        folderCombo.SelectedIndex = 0;
+
+        // IDE selection
+        var lblIde = new Label { Text = "Select IDE:", Location = new Point(12, 65), AutoSize = true };
+        var ideList = new ListView
+        {
+            Location = new Point(12, 85),
+            Size = new Size(455, 150),
+            View = View.Details,
+            FullRowSelect = true,
+            MultiSelect = false,
+            GridLines = true
+        };
+        ideList.Columns.Add("IDE", 180);
+        ideList.Columns.Add("Path", 260);
+        foreach (var ide in _settings.Ides)
+        {
+            var item = new ListViewItem(ide.Description);
+            item.SubItems.Add(ide.Path);
+            ideList.Items.Add(item);
+        }
+        if (ideList.Items.Count > 0)
+            ideList.Items[0].Selected = true;
+
+        var btnOpen = new Button { Text = "Open", Location = new Point(305, 245), Width = 80 };
+        var btnCancel = new Button { Text = "Cancel", Location = new Point(392, 245), Width = 80 };
+        btnCancel.Click += (s, e) => form.Close();
+
+        btnOpen.Click += (s, e) =>
+        {
+            if (ideList.SelectedItems.Count == 0) return;
+            var idePath = ideList.SelectedItems[0].SubItems[1].Text;
+            var folderPath = folderChoices[folderCombo.SelectedIndex].path;
+
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = idePath,
+                    Arguments = $"\"{folderPath}\"",
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to launch IDE: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            form.Close();
+        };
+
+        ideList.DoubleClick += (s, e) => btnOpen.PerformClick();
+
+        form.Controls.AddRange(new Control[] { lblFolder, folderCombo, lblIde, ideList, btnOpen, btnCancel });
+        form.AcceptButton = btnOpen;
+        form.CancelButton = btnCancel;
+        form.ShowDialog();
+    }
+
+    static string? FindGitRoot(string startPath)
+    {
+        var dir = startPath;
+        while (!string.IsNullOrEmpty(dir))
+        {
+            if (Directory.Exists(Path.Combine(dir, ".git")))
+                return dir;
+            var parent = Directory.GetParent(dir)?.FullName;
+            if (parent == dir) break;
+            dir = parent;
+        }
+        return null;
     }
 
     #endregion
