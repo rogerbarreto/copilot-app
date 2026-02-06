@@ -33,11 +33,27 @@ internal static partial class WindowFocusService
     [LibraryImport("user32.dll")]
     private static partial int GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
 
+    [LibraryImport("user32.dll")]
+    private static partial IntPtr GetForegroundWindow();
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool AttachThreadInput(uint idAttach, uint idAttachTo, [MarshalAs(UnmanagedType.Bool)] bool fAttach);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool BringWindowToTop(IntPtr hWnd);
+
+    [LibraryImport("kernel32.dll")]
+    private static partial uint GetCurrentThreadId();
+
     private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
 
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
+#pragma warning disable SYSLIB1054 // Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
     private static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
+#pragma warning restore SYSLIB1054 // Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
     /// <summary>
     /// Attempts to bring the window of the specified process to the foreground.
@@ -73,6 +89,7 @@ internal static partial class WindowFocusService
 
     /// <summary>
     /// Restores (if minimized) and brings the specified window to the foreground.
+    /// Uses AttachThreadInput to bypass Windows foreground restrictions.
     /// </summary>
     private static bool FocusWindow(IntPtr hwnd)
     {
@@ -81,7 +98,31 @@ internal static partial class WindowFocusService
             ShowWindow(hwnd, SW_RESTORE);
         }
 
-        SetForegroundWindow(hwnd);
+        // Attach to the foreground window's thread to gain SetForegroundWindow permission
+        IntPtr foregroundHwnd = GetForegroundWindow();
+        uint currentThread = GetCurrentThreadId();
+        uint foregroundThread = (uint)GetWindowThreadProcessId(foregroundHwnd, out _);
+        uint targetThread = (uint)GetWindowThreadProcessId(hwnd, out _);
+
+        bool attached = false;
+        if (currentThread != foregroundThread)
+        {
+            attached = AttachThreadInput(currentThread, foregroundThread, true);
+        }
+
+        try
+        {
+            BringWindowToTop(hwnd);
+            SetForegroundWindow(hwnd);
+        }
+        finally
+        {
+            if (attached)
+            {
+                AttachThreadInput(currentThread, foregroundThread, false);
+            }
+        }
+
         return true;
     }
 
