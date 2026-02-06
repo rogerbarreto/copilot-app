@@ -153,8 +153,7 @@ class MainForm : Form
             if (_sessionListView.SelectedItems.Count > 0)
             {
                 _selectedSessionId = _sessionListView.SelectedItems[0].Tag as string;
-                DialogResult = DialogResult.OK;
-                Close();
+                LaunchSessionAndClose();
             }
         };
 
@@ -172,8 +171,7 @@ class MainForm : Form
             if (_sessionListView.SelectedItems.Count > 0)
             {
                 _selectedSessionId = _sessionListView.SelectedItems[0].Tag as string;
-                DialogResult = DialogResult.OK;
-                Close();
+                LaunchSessionAndClose();
             }
         };
 
@@ -324,6 +322,19 @@ class MainForm : Form
 
         if (initialTab >= 0 && initialTab < _mainTabs.TabPages.Count)
             _mainTabs.SelectedIndex = initialTab;
+    }
+
+    void LaunchSessionAndClose()
+    {
+        if (_selectedSessionId != null)
+        {
+            var exePath = Environment.ProcessPath ?? Application.ExecutablePath;
+            Process.Start(new ProcessStartInfo(exePath, $"--resume {_selectedSessionId}")
+            {
+                UseShellExecute = false
+            });
+        }
+        Close();
     }
 
     public void SwitchToTab(int tabIndex)
@@ -664,6 +675,7 @@ class Program
     static readonly string CopilotDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".copilot");
     internal static readonly string SessionStateDir = Path.Combine(CopilotDir, "session-state");
     static readonly string PidRegistryFile = Path.Combine(CopilotDir, "active-pids.json");
+    static readonly string SignalFile = Path.Combine(CopilotDir, "ui-signal.txt");
     static readonly string LastUpdateFile = Path.Combine(CopilotDir, "jumplist-lastupdate.txt");
     static readonly string LogFile = Path.Combine(CopilotDir, "launcher.log");
     static readonly string LauncherExePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName ?? "";
@@ -763,25 +775,54 @@ class Program
             }
         }
 
-        // If settings mode, show MainForm on Settings tab and exit
-        if (showSettings)
+        // Settings / Existing Sessions / Open IDE share a single MainForm window
+        if (showSettings || openExisting || openIdeSessionId != null)
         {
-            if (_mainForm != null && !_mainForm.IsDisposed)
+            if (openIdeSessionId != null)
             {
-                _mainForm.SwitchToTab(1);
+                OpenIdeForSession(openIdeSessionId);
+                return;
             }
-            else
-            {
-                _mainForm = new MainForm(initialTab: 1);
-                Application.Run(_mainForm);
-            }
-            return;
-        }
 
-        // If open-ide mode, show IDE picker for the given session
-        if (openIdeSessionId != null)
-        {
-            OpenIdeForSession(openIdeSessionId);
+            int desiredTab = showSettings ? 1 : 0;
+
+            // Check if another CopilotApp MainForm is already open
+            var existing = Process.GetProcessesByName("CopilotApp")
+                .Where(p => p.Id != Environment.ProcessId && p.MainWindowTitle == "Copilot App")
+                .FirstOrDefault();
+
+            if (existing != null)
+            {
+                // Signal the existing instance to switch tab and bring to front
+                try { File.WriteAllText(SignalFile, desiredTab.ToString()); } catch { }
+                Log($"Signaled existing MainForm (PID {existing.Id}) to switch to tab {desiredTab}");
+                return;
+            }
+
+            _mainForm = new MainForm(initialTab: desiredTab);
+
+            // Poll for signal file from other instances
+            var signalTimer = new System.Windows.Forms.Timer { Interval = 300 };
+            signalTimer.Tick += (s, e) =>
+            {
+                try
+                {
+                    if (File.Exists(SignalFile))
+                    {
+                        var content = File.ReadAllText(SignalFile).Trim();
+                        File.Delete(SignalFile);
+                        if (int.TryParse(content, out int tab))
+                            _mainForm.SwitchToTab(tab);
+                    }
+                }
+                catch { }
+            };
+            signalTimer.Start();
+
+            try { if (File.Exists(SignalFile)) File.Delete(SignalFile); } catch { }
+
+            Application.Run(_mainForm);
+            signalTimer.Stop();
             return;
         }
 
@@ -789,13 +830,6 @@ class Program
         var defaultWorkDir = !string.IsNullOrEmpty(_settings.DefaultWorkDir) ? _settings.DefaultWorkDir
             : Environment.GetEnvironmentVariable("COPILOT_WORK_DIR")
             ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-
-        // If open-existing mode, show session picker
-        if (openExisting)
-        {
-            resumeSessionId = ShowSessionPicker();
-            if (resumeSessionId == null) return;
-        }
 
         // For new sessions (no explicit workDir, not resuming), show CWD picker
         if (workDir == null && resumeSessionId == null)
@@ -1479,19 +1513,6 @@ class Program
     #endregion
 
     #region Session Picker
-
-    static string? ShowSessionPicker()
-    {
-        var sessions = MainForm.LoadNamedSessions();
-        if (sessions.Count == 0)
-        {
-            MessageBox.Show("No named sessions found.", "Existing Sessions", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            return null;
-        }
-
-        var form = new MainForm(initialTab: 0);
-        return form.ShowDialog() == DialogResult.OK ? form.SelectedSessionId : null;
-    }
 
     #endregion
 }
