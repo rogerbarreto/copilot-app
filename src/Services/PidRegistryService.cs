@@ -36,11 +36,12 @@ internal class PidRegistryService
     internal void UnregisterPid(int pid) => UnregisterPid(pid, this._pidRegistryFile);
 
     /// <summary>
-    /// Associates a session ID with the specified process ID in the configured PID registry.
+    /// Associates a session ID and copilot process ID with the specified launcher process ID.
     /// </summary>
-    /// <param name="pid">The process ID to update.</param>
+    /// <param name="pid">The launcher process ID to update.</param>
     /// <param name="sessionId">The session ID to associate with the process.</param>
-    internal void UpdatePidSessionId(int pid, string sessionId) => UpdatePidSessionId(pid, sessionId, this._pidRegistryFile);
+    /// <param name="copilotPid">The copilot CLI process ID.</param>
+    internal void UpdatePidSessionId(int pid, string sessionId, int copilotPid = 0) => UpdatePidSessionId(pid, sessionId, this._pidRegistryFile, copilotPid);
 
     /// <summary>
     /// Registers a process ID in the PID registry file, creating the directory and file if needed.
@@ -73,12 +74,13 @@ internal class PidRegistryService
     }
 
     /// <summary>
-    /// Updates the session ID associated with a process ID in the PID registry file.
+    /// Updates the session ID and copilot process ID associated with a process ID in the PID registry file.
     /// </summary>
-    /// <param name="pid">The process ID to update.</param>
+    /// <param name="pid">The launcher process ID to update.</param>
     /// <param name="sessionId">The session ID to associate with the process.</param>
     /// <param name="pidRegistryFile">Path to the PID registry JSON file.</param>
-    internal static void UpdatePidSessionId(int pid, string sessionId, string pidRegistryFile)
+    /// <param name="copilotPid">The copilot CLI process ID.</param>
+    internal static void UpdatePidSessionId(int pid, string sessionId, string pidRegistryFile, int copilotPid = 0)
     {
         try
         {
@@ -91,7 +93,7 @@ internal class PidRegistryService
             var registry = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json) ?? new();
 
             registry[pid.ToString()] = JsonSerializer.Deserialize<JsonElement>(
-                JsonSerializer.Serialize(new { started = System.DateTime.Now.ToString("o"), sessionId }));
+                JsonSerializer.Serialize(new { started = System.DateTime.Now.ToString("o"), sessionId, copilotPid }));
 
             File.WriteAllText(pidRegistryFile, JsonSerializer.Serialize(registry));
         }

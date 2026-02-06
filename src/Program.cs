@@ -190,9 +190,9 @@ internal class Program
         {
             var activeSessions = SessionService.GetActiveSessions(s_pidRegistryFile, SessionStateDir);
             var existing = activeSessions.FirstOrDefault(s => s.Id == resumeSessionId);
-            if (existing != null && WindowFocusService.TryFocusProcess(existing.Pid))
+            if (existing != null && existing.CopilotPid > 0 && WindowFocusService.TryFocusProcess(existing.CopilotPid))
             {
-                LogService.Log($"Focused existing session {resumeSessionId} (PID {existing.Pid})", s_logFile);
+                LogService.Log($"Focused existing session {resumeSessionId} (copilot PID {existing.CopilotPid})", s_logFile);
                 return;
             }
         }
@@ -325,8 +325,9 @@ internal class Program
 
             if (sessionId != null)
             {
-                PidRegistryService.UpdatePidSessionId(myPid, sessionId, s_pidRegistryFile);
-                LogService.Log($"Mapped PID {myPid} to session {sessionId}", s_logFile);
+                int copilotPid = s_copilotProcess?.Id ?? 0;
+                PidRegistryService.UpdatePidSessionId(myPid, sessionId, s_pidRegistryFile, copilotPid);
+                LogService.Log($"Mapped PID {myPid} to session {sessionId} (copilot PID {copilotPid})", s_logFile);
             }
 
             LogService.Log("Updating jump list...", s_logFile);

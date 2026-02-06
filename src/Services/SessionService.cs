@@ -90,6 +90,12 @@ internal class SessionService
                     continue;
                 }
 
+                int copilotPid = 0;
+                if (entry.TryGetProperty("copilotPid", out var cpProp) && cpProp.ValueKind == JsonValueKind.Number)
+                {
+                    copilotPid = cpProp.GetInt32();
+                }
+
                 var workspaceFile = Path.Combine(sessionStateDir, sessionId, "workspace.yaml");
                 if (!File.Exists(workspaceFile))
                 {
@@ -99,6 +105,7 @@ internal class SessionService
                 var session = ParseWorkspace(workspaceFile, pid);
                 if (session != null)
                 {
+                    session.CopilotPid = copilotPid;
                     sessions.Add(session);
                 }
             }

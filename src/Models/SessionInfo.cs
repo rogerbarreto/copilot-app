@@ -21,7 +21,12 @@ internal class SessionInfo
     public string Summary { get; set; } = "";
 
     /// <summary>
-    /// Gets or sets the process ID of the session.
+    /// Gets or sets the process ID of the launcher.
     /// </summary>
     public int Pid { get; set; }
+
+    /// <summary>
+    /// Gets or sets the process ID of the Copilot CLI process running in a terminal.
+    /// </summary>
+    public int CopilotPid { get; set; }
 }
