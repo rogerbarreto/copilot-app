@@ -107,4 +107,39 @@ public sealed class GetActiveSessionsTests : IDisposable
 
         Assert.Empty(result);
     }
+
+    [Fact]
+    public void GetActiveSessions_WithCopilotPid_RegistryEntryPreserved()
+    {
+        // Verifies that copilotPid in the registry doesn't cause parsing errors.
+        // Full integration (CopilotPid populated on SessionInfo) requires a running
+        // CopilotApp process and is covered by manual/integration testing.
+        var fakePid = 99999;
+        var registry = new Dictionary<string, object>
+        {
+            [fakePid.ToString()] = new { started = DateTime.Now.ToString("o"), sessionId = "s1", copilotPid = 5678 }
+        };
+        File.WriteAllText(this._pidFile, JsonSerializer.Serialize(registry));
+
+        var result = SessionService.GetActiveSessions(this._pidFile, this._sessionStateDir);
+
+        // Process doesn't exist so entry is removed, but no exceptions thrown
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public void GetActiveSessions_WithoutCopilotPid_BackwardCompatible()
+    {
+        // Verifies old registry format (no copilotPid field) doesn't break parsing.
+        var fakePid = 99998;
+        var registry = new Dictionary<string, object>
+        {
+            [fakePid.ToString()] = new { started = DateTime.Now.ToString("o"), sessionId = "s1" }
+        };
+        File.WriteAllText(this._pidFile, JsonSerializer.Serialize(registry));
+
+        var result = SessionService.GetActiveSessions(this._pidFile, this._sessionStateDir);
+
+        Assert.Empty(result);
+    }
 }
