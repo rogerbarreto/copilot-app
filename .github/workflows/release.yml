@@ -37,7 +37,7 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Publish
-        run: dotnet publish src/CopilotApp.csproj -c Release -o publish --nologo
+        run: dotnet publish src/CopilotApp.csproj -c Release -r win-x64 -o publish --nologo
 
       - name: Create release archive
         run: Compress-Archive -Path publish/* -DestinationPath CopilotApp-win-x64.zip
