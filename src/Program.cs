@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -105,6 +106,7 @@ class IdeEntry
 
 #region MainForm
 
+[ExcludeFromCodeCoverage]
 class MainForm : Form
 {
     readonly TabControl _mainTabs;
@@ -789,6 +791,7 @@ class Program
     }
 
     [STAThread]
+    [ExcludeFromCodeCoverage]
     static void Main(string[] args)
     {
         Log("Launcher started");
@@ -918,6 +921,7 @@ class Program
         Application.Run(_hiddenForm);
     }
 
+    [ExcludeFromCodeCoverage]
     static void StartCopilotSession(string workDir, string? resumeSessionId)
     {
         var myPid = Environment.ProcessId;
@@ -1014,6 +1018,7 @@ class Program
 
     #region Jump List
 
+    [ExcludeFromCodeCoverage]
     static void TryUpdateJumpListWithLock()
     {
         try
@@ -1048,6 +1053,7 @@ class Program
         catch { return true; }
     }
 
+    [ExcludeFromCodeCoverage]
     static void UpdaterLoop(CancellationToken ct)
     {
         while (!ct.IsCancellationRequested)
@@ -1062,6 +1068,7 @@ class Program
         }
     }
 
+    [ExcludeFromCodeCoverage]
     static void UpdateJumpList()
     {
         try
@@ -1272,6 +1279,7 @@ class Program
 
     #region Open IDE
 
+    [ExcludeFromCodeCoverage]
     internal static void OpenIdeForSession(string sessionId)
     {
         if (_settings.Ides.Count == 0)
@@ -1386,6 +1394,7 @@ class Program
         form.ShowDialog();
     }
 
+    [ExcludeFromCodeCoverage]
     static void LaunchIde(string idePath, string folderPath)
     {
         try
@@ -1421,6 +1430,7 @@ class Program
 
     #region CWD Picker
 
+    [ExcludeFromCodeCoverage]
     static string? ShowCwdPicker(string defaultWorkDir)
     {
         // Scan all session workspace.yaml files to collect CWDs and their frequency
