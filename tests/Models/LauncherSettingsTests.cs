@@ -84,7 +84,7 @@ public sealed class LauncherSettingsTests : IDisposable
         var file = Path.Combine(this._tempDir, "sub", "deep", "settings.json");
         var settings = new LauncherSettings
         {
-            AllowedTools = new List<string> { "mytool" },
+            AllowedTools = ["mytool"],
             DefaultWorkDir = @"C:\mywork"
         };
 
@@ -125,7 +125,7 @@ public sealed class LauncherSettingsTests : IDisposable
     public void BuildCopilotArgs_NoToolsNoDirs_ReturnsExtraArgsOnly()
     {
         var settings = new LauncherSettings();
-        var result = settings.BuildCopilotArgs(new[] { "--resume", "abc" });
+        var result = settings.BuildCopilotArgs(["--resume", "abc"]);
 
         Assert.Equal("--resume abc", result);
     }
@@ -135,11 +135,11 @@ public sealed class LauncherSettingsTests : IDisposable
     {
         var settings = new LauncherSettings
         {
-            AllowedTools = new List<string> { "bash", "python" },
-            AllowedDirs = new List<string> { @"C:\code", @"D:\work" }
+            AllowedTools = ["bash", "python"],
+            AllowedDirs = [@"C:\code", @"D:\work"]
         };
 
-        var result = settings.BuildCopilotArgs(Array.Empty<string>());
+        var result = settings.BuildCopilotArgs([]);
 
         Assert.Contains("\"--allow-tool=bash\"", result);
         Assert.Contains("\"--allow-tool=python\"", result);
@@ -152,10 +152,10 @@ public sealed class LauncherSettingsTests : IDisposable
     {
         var settings = new LauncherSettings
         {
-            AllowedTools = new List<string> { "tool1" }
+            AllowedTools = ["tool1"]
         };
 
-        var result = settings.BuildCopilotArgs(new[] { "--resume session1" });
+        var result = settings.BuildCopilotArgs(["--resume session1"]);
 
         Assert.StartsWith("\"--allow-tool=tool1\"", result);
         Assert.EndsWith("--resume session1", result);
@@ -166,11 +166,11 @@ public sealed class LauncherSettingsTests : IDisposable
     {
         var settings = new LauncherSettings
         {
-            AllowedTools = new List<string> { "tool1" },
-            AllowedDirs = new List<string> { @"C:\dir" }
+            AllowedTools = ["tool1"],
+            AllowedDirs = [@"C:\dir"]
         };
 
-        var result = settings.BuildCopilotArgs(Array.Empty<string>());
+        var result = settings.BuildCopilotArgs([]);
 
         Assert.Equal("\"--allow-tool=tool1\" \"--add-dir=C:\\dir\"", result);
     }

@@ -15,17 +15,19 @@ internal class LauncherSettings
     private static readonly string s_settingsFile = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".copilot", "launcher-settings.json");
 
+    private static readonly JsonSerializerOptions s_writeOptions = new() { WriteIndented = true };
+
     /// <summary>
     /// Gets or sets the list of tools the launcher is allowed to use.
     /// </summary>
     [JsonPropertyName("allowedTools")]
-    public List<string> AllowedTools { get; set; } = new();
+    public List<string> AllowedTools { get; set; } = [];
 
     /// <summary>
     /// Gets or sets the list of directories the launcher is allowed to access.
     /// </summary>
     [JsonPropertyName("allowedDirs")]
-    public List<string> AllowedDirs { get; set; } = new();
+    public List<string> AllowedDirs { get; set; } = [];
 
     /// <summary>
     /// Gets or sets the default working directory for new sessions.
@@ -37,7 +39,7 @@ internal class LauncherSettings
     /// Gets or sets the list of configured IDE entries.
     /// </summary>
     [JsonPropertyName("ides")]
-    public List<IdeEntry> Ides { get; set; } = new();
+    public List<IdeEntry> Ides { get; set; } = [];
 
     /// <summary>
     /// Loads the launcher settings from the default settings file.
@@ -86,7 +88,7 @@ internal class LauncherSettings
                 Directory.CreateDirectory(dir);
             }
 
-            var options = new JsonSerializerOptions { WriteIndented = true };
+            var options = s_writeOptions;
             File.WriteAllText(settingsFile, JsonSerializer.Serialize(this, options));
         }
         catch { }
@@ -100,8 +102,8 @@ internal class LauncherSettings
     {
         return new LauncherSettings
         {
-            AllowedTools = new List<string>(),
-            AllowedDirs = new List<string>(),
+            AllowedTools = [],
+            AllowedDirs = [],
             DefaultWorkDir = ""
         };
     }

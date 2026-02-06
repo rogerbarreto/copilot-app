@@ -4,31 +4,19 @@ using System.IO;
 
 namespace CopilotApp.Services;
 
-/// <summary>
-/// Locates the Copilot executable on the local system.
-/// </summary>
 internal class CopilotLocator
 {
-    /// <summary>
-    /// Finds the Copilot executable using default candidate paths.
-    /// </summary>
-    /// <returns>The path to the Copilot executable.</returns>
     internal static string FindCopilotExe() => FindCopilotExe(null);
 
-    /// <summary>
-    /// Finds the Copilot executable by checking the specified candidate paths, then falling back to the system PATH.
-    /// </summary>
-    /// <param name="candidatePaths">An array of candidate file paths to check, or <c>null</c> to use defaults.</param>
-    /// <returns>The path to the Copilot executable, or <c>"copilot.exe"</c> if not found.</returns>
     internal static string FindCopilotExe(string[]? candidatePaths)
     {
-        candidatePaths ??= new[]
-        {
+        candidatePaths ??=
+        [
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 @"Microsoft\WinGet\Packages\GitHub.Copilot.Prerelease_Microsoft.Winget.Source_8wekyb3d8bbwe\copilot.exe"),
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 @"Microsoft\WinGet\Packages\GitHub.Copilot_Microsoft.Winget.Source_8wekyb3d8bbwe\copilot.exe"),
-        };
+        ];
 
         foreach (var path in candidatePaths)
         {

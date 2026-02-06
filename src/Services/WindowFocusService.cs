@@ -10,28 +10,28 @@ namespace CopilotApp.Services;
 /// Provides methods for finding and focusing existing application windows.
 /// </summary>
 [ExcludeFromCodeCoverage]
-internal static class WindowFocusService
+internal static partial class WindowFocusService
 {
     private const int SW_RESTORE = 9;
 
-    [DllImport("user32.dll")]
+    [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool SetForegroundWindow(IntPtr hWnd);
+    private static partial bool SetForegroundWindow(IntPtr hWnd);
 
-    [DllImport("user32.dll")]
+    [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+    private static partial bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
-    [DllImport("user32.dll")]
+    [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool IsIconic(IntPtr hWnd);
+    private static partial bool IsIconic(IntPtr hWnd);
 
-    [DllImport("user32.dll")]
+    [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool IsWindowVisible(IntPtr hWnd);
+    private static partial bool IsWindowVisible(IntPtr hWnd);
 
-    [DllImport("user32.dll")]
-    private static extern int GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+    [LibraryImport("user32.dll")]
+    private static partial int GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
 
     private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
 
@@ -122,7 +122,7 @@ internal static class WindowFocusService
                 return true;
             }
 
-            GetWindowThreadProcessId(hwnd, out uint windowPid);
+            _ = GetWindowThreadProcessId(hwnd, out uint windowPid);
             try
             {
                 var windowProc = Process.GetProcessById((int)windowPid);
@@ -212,8 +212,8 @@ internal static class WindowFocusService
         public IntPtr InheritedFromUniqueProcessId;
     }
 
-    [DllImport("ntdll.dll")]
-    private static extern int NtQueryInformationProcess(
+    [LibraryImport("ntdll.dll")]
+    private static partial int NtQueryInformationProcess(
         IntPtr processHandle, int processInformationClass,
         ref PROCESS_BASIC_INFORMATION processInformation, int processInformationLength,
         out int returnLength);

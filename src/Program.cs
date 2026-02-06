@@ -275,7 +275,7 @@ internal class Program
         var cts = new CancellationTokenSource();
         if (isUpdater)
         {
-            var updaterThread = new Thread(() => JumpListService.UpdaterLoop(cts.Token, UpdateLockName, s_lastUpdateFile, s_launcherExePath, CopilotExePath, s_pidRegistryFile, SessionStateDir, s_logFile, s_hiddenForm)) { IsBackground = true };
+            var updaterThread = new Thread(() => JumpListService.UpdaterLoop(UpdateLockName, s_lastUpdateFile, s_launcherExePath, CopilotExePath, s_pidRegistryFile, SessionStateDir, s_logFile, s_hiddenForm, cts.Token)) { IsBackground = true };
             updaterThread.Start();
         }
 
@@ -285,7 +285,7 @@ internal class Program
         var existingSessions = new HashSet<string>(
             Directory.Exists(SessionStateDir)
                 ? Directory.GetDirectories(SessionStateDir).Select(d => Path.GetFileName(d) ?? "")
-                : Array.Empty<string>());
+                : []);
 
         // Launch copilot directly with allowed tools/dirs from settings
         var copilotArgs = new List<string>();

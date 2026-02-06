@@ -86,7 +86,7 @@ internal class JumpListService
     /// <param name="logFile">Path to the log file.</param>
     /// <param name="hiddenForm">The hidden form used for UI thread invocation, or <c>null</c>.</param>
     [ExcludeFromCodeCoverage]
-    internal static void UpdaterLoop(CancellationToken ct, string updateLockName, string lastUpdateFile, string launcherExePath, string copilotExePath, string pidRegistryFile, string sessionStateDir, string logFile, Form? hiddenForm)
+    internal static void UpdaterLoop(string updateLockName, string lastUpdateFile, string launcherExePath, string copilotExePath, string pidRegistryFile, string sessionStateDir, string logFile, Form? hiddenForm, CancellationToken ct)
     {
         while (!ct.IsCancellationRequested)
         {

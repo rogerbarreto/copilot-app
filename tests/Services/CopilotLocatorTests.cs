@@ -19,7 +19,7 @@
         var fakeCopilot = Path.Combine(this._tempDir, "copilot.exe");
         File.WriteAllText(fakeCopilot, "fake");
 
-        var result = CopilotLocator.FindCopilotExe(new[] { fakeCopilot });
+        var result = CopilotLocator.FindCopilotExe([fakeCopilot]);
 
         Assert.Equal(fakeCopilot, result);
     }
@@ -27,11 +27,11 @@
     [Fact]
     public void FindCopilotExe_NoCandidatesExist_FallsBackToDefault()
     {
-        var result = CopilotLocator.FindCopilotExe(new[]
-        {
+        var result = CopilotLocator.FindCopilotExe(
+        [
             Path.Combine(this._tempDir, "nonexistent1.exe"),
             Path.Combine(this._tempDir, "nonexistent2.exe")
-        });
+        ]);
 
         // Falls through to 'where' command or returns "copilot.exe"
         Assert.NotEmpty(result);
@@ -45,7 +45,7 @@
         File.WriteAllText(first, "fake1");
         File.WriteAllText(second, "fake2");
 
-        var result = CopilotLocator.FindCopilotExe(new[] { first, second });
+        var result = CopilotLocator.FindCopilotExe([first, second]);
 
         Assert.Equal(first, result);
     }
@@ -53,7 +53,7 @@
     [Fact]
     public void FindCopilotExe_EmptyCandidates_FallsBackToDefault()
     {
-        var result = CopilotLocator.FindCopilotExe(Array.Empty<string>());
+        var result = CopilotLocator.FindCopilotExe([]);
 
         Assert.NotEmpty(result);
     }

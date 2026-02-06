@@ -58,12 +58,12 @@ internal class PidRegistryService
                 Directory.CreateDirectory(copilotDir);
             }
 
-            Dictionary<string, object> registry = new();
+            Dictionary<string, object> registry = [];
             if (File.Exists(pidRegistryFile))
             {
                 try
                 {
-                    registry = JsonSerializer.Deserialize<Dictionary<string, object>>(File.ReadAllText(pidRegistryFile)) ?? new();
+                    registry = JsonSerializer.Deserialize<Dictionary<string, object>>(File.ReadAllText(pidRegistryFile)) ?? [];
                 }
                 catch { }
             }
@@ -90,7 +90,7 @@ internal class PidRegistryService
             }
 
             var json = File.ReadAllText(pidRegistryFile);
-            var registry = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json) ?? new();
+            var registry = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json) ?? [];
 
             registry[pid.ToString()] = JsonSerializer.Deserialize<JsonElement>(
                 JsonSerializer.Serialize(new { started = System.DateTime.Now.ToString("o"), sessionId, copilotPid }));
@@ -114,7 +114,7 @@ internal class PidRegistryService
                 return;
             }
 
-            var registry = JsonSerializer.Deserialize<Dictionary<string, object>>(File.ReadAllText(pidRegistryFile)) ?? new();
+            var registry = JsonSerializer.Deserialize<Dictionary<string, object>>(File.ReadAllText(pidRegistryFile)) ?? [];
             registry.Remove(pid.ToString());
             File.WriteAllText(pidRegistryFile, JsonSerializer.Serialize(registry));
         }

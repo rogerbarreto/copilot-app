@@ -112,8 +112,7 @@ internal class MainForm : Form
             {
                 if (this._sessionListView.SelectedItems.Count > 0)
                 {
-                    var sid = this._sessionListView.SelectedItems[0].Tag as string;
-                    if (sid != null)
+                    if (this._sessionListView.SelectedItems[0].Tag is string sid)
                     {
                         IdePickerForm.OpenIdeForSession(sid);
                     }
@@ -144,7 +143,7 @@ internal class MainForm : Form
             this._toolsList.Items.Add(tool);
         }
 
-        var toolsButtons = this.CreateListButtons(this._toolsList, "Tool name:", "Add Tool", addBrowse: false);
+        var toolsButtons = CreateListButtons(this._toolsList, "Tool name:", "Add Tool", addBrowse: false);
         toolsTab.Controls.Add(this._toolsList);
         toolsTab.Controls.Add(toolsButtons);
 
@@ -156,7 +155,7 @@ internal class MainForm : Form
             this._dirsList.Items.Add(dir);
         }
 
-        var dirsButtons = this.CreateListButtons(this._dirsList, "Directory path:", "Add Directory", addBrowse: true);
+        var dirsButtons = CreateListButtons(this._dirsList, "Directory path:", "Add Directory", addBrowse: true);
         dirsTab.Controls.Add(this._dirsList);
         dirsTab.Controls.Add(dirsButtons);
 
@@ -212,7 +211,7 @@ internal class MainForm : Form
                 this._workDirBox.Text = fbd.SelectedPath;
             }
         };
-        workDirPanel.Controls.AddRange(new Control[] { workDirLabel, this._workDirBox, workDirBrowse });
+        workDirPanel.Controls.AddRange([workDirLabel, this._workDirBox, workDirBrowse]);
 
         // --- Bottom buttons ---
         var settingsBottomPanel = new FlowLayoutPanel
@@ -232,7 +231,7 @@ internal class MainForm : Form
             Program._settings.AllowedTools = this._toolsList.Items.Cast<string>().ToList();
             Program._settings.AllowedDirs = this._dirsList.Items.Cast<string>().ToList();
             Program._settings.DefaultWorkDir = this._workDirBox.Text.Trim();
-            Program._settings.Ides = new List<IdeEntry>();
+            Program._settings.Ides = [];
             foreach (ListViewItem item in this._idesList.Items)
             {
                 Program._settings.Ides.Add(new IdeEntry { Description = item.Text, Path = item.SubItems[1].Text });
@@ -353,7 +352,7 @@ internal class MainForm : Form
     /// <returns>A list of named sessions.</returns>
     internal static List<NamedSession> LoadNamedSessions(string sessionStateDir) => SessionService.LoadNamedSessions(sessionStateDir);
 
-    private FlowLayoutPanel CreateListButtons(ListBox listBox, string promptText, string addTitle, bool addBrowse)
+    private static FlowLayoutPanel CreateListButtons(ListBox listBox, string promptText, string addTitle, bool addBrowse)
     {
         var panel = new FlowLayoutPanel
         {
@@ -460,7 +459,7 @@ internal class MainForm : Form
             }
         };
 
-        panel.Controls.AddRange(new Control[] { btnAdd, btnEdit, btnRemove, btnUp, btnDown });
+        panel.Controls.AddRange([btnAdd, btnEdit, btnRemove, btnUp, btnDown]);
         return panel;
     }
 
@@ -522,7 +521,7 @@ internal class MainForm : Form
             }
         };
 
-        panel.Controls.AddRange(new Control[] { btnAdd, btnEdit, btnRemove });
+        panel.Controls.AddRange([btnAdd, btnEdit, btnRemove]);
         return panel;
     }
 
@@ -560,7 +559,7 @@ internal class MainForm : Form
         var btnOk = new Button { Text = "OK", DialogResult = DialogResult.OK, Location = new Point(310, 118), Width = 75 };
         var btnCancel = new Button { Text = "Cancel", DialogResult = DialogResult.Cancel, Location = new Point(392, 118), Width = 75 };
 
-        form.Controls.AddRange(new Control[] { lblDesc, txtDesc, lblPath, txtPath, btnBrowse, btnOk, btnCancel });
+        form.Controls.AddRange([lblDesc, txtDesc, lblPath, txtPath, btnBrowse, btnOk, btnCancel]);
         form.AcceptButton = btnOk;
         form.CancelButton = btnCancel;
 
@@ -589,7 +588,7 @@ internal class MainForm : Form
         var btnOk = new Button { Text = "OK", DialogResult = DialogResult.OK, Location = new Point(260, 72), Width = 75 };
         var btnCancel = new Button { Text = "Cancel", DialogResult = DialogResult.Cancel, Location = new Point(342, 72), Width = 75 };
 
-        form.Controls.AddRange(new Control[] { lbl, txt, btnOk, btnCancel });
+        form.Controls.AddRange([lbl, txt, btnOk, btnCancel]);
         form.AcceptButton = btnOk;
         form.CancelButton = btnCancel;
 
