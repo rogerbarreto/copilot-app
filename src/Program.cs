@@ -4,12 +4,15 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Windows.Forms;
 using Microsoft.WindowsAPICodePack.Taskbar;
 using Microsoft.WindowsAPICodePack.Shell;
+
+[assembly: InternalsVisibleTo("CopilotApp.Tests")]
 
 #region Settings Model
 
@@ -30,37 +33,41 @@ class LauncherSettings
     [JsonPropertyName("ides")]
     public List<IdeEntry> Ides { get; set; } = new();
 
-    public static LauncherSettings Load()
+    public static LauncherSettings Load() => Load(SettingsFile);
+
+    internal static LauncherSettings Load(string settingsFile)
     {
         try
         {
-            if (File.Exists(SettingsFile))
+            if (File.Exists(settingsFile))
             {
-                var json = File.ReadAllText(SettingsFile);
+                var json = File.ReadAllText(settingsFile);
                 return JsonSerializer.Deserialize<LauncherSettings>(json) ?? CreateDefault();
             }
         }
         catch { }
 
         var settings = CreateDefault();
-        settings.Save();
+        settings.Save(settingsFile);
         return settings;
     }
 
-    public void Save()
+    public void Save() => Save(SettingsFile);
+
+    internal void Save(string settingsFile)
     {
         try
         {
-            var dir = Path.GetDirectoryName(SettingsFile)!;
+            var dir = Path.GetDirectoryName(settingsFile)!;
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
             var options = new JsonSerializerOptions { WriteIndented = true };
-            File.WriteAllText(SettingsFile, JsonSerializer.Serialize(this, options));
+            File.WriteAllText(settingsFile, JsonSerializer.Serialize(this, options));
         }
         catch { }
     }
 
-    static LauncherSettings CreateDefault()
+    internal static LauncherSettings CreateDefault()
     {
         return new LauncherSettings
         {
@@ -387,12 +394,14 @@ class MainForm : Form
         _workDirBox.Text = fresh.DefaultWorkDir;
     }
 
-    internal static List<NamedSession> LoadNamedSessions()
+    internal static List<NamedSession> LoadNamedSessions() => LoadNamedSessions(Program.SessionStateDir);
+
+    internal static List<NamedSession> LoadNamedSessions(string sessionStateDir)
     {
         var results = new List<NamedSession>();
-        if (!Directory.Exists(Program.SessionStateDir)) return results;
+        if (!Directory.Exists(sessionStateDir)) return results;
 
-        var sessions = Directory.GetDirectories(Program.SessionStateDir)
+        var sessions = Directory.GetDirectories(sessionStateDir)
             .OrderByDescending(d => Directory.GetLastWriteTime(d))
             .Select(d =>
             {
@@ -686,10 +695,11 @@ class Program
     static Process? _copilotProcess;
     static MainForm? _mainForm;
 
-    static string FindCopilotExe()
+    static string FindCopilotExe() => FindCopilotExe(null);
+
+    internal static string FindCopilotExe(string[]? candidatePaths)
     {
-        // Search common install locations
-        var candidates = new[]
+        candidatePaths ??= new[]
         {
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 @"Microsoft\WinGet\Packages\GitHub.Copilot.Prerelease_Microsoft.Winget.Source_8wekyb3d8bbwe\copilot.exe"),
@@ -697,7 +707,7 @@ class Program
                 @"Microsoft\WinGet\Packages\GitHub.Copilot_Microsoft.Winget.Source_8wekyb3d8bbwe\copilot.exe"),
         };
 
-        foreach (var path in candidates)
+        foreach (var path in candidatePaths)
             if (File.Exists(path)) return path;
 
         // Fallback: try to find copilot in PATH
@@ -720,29 +730,29 @@ class Program
         return "copilot.exe";
     }
 
-    static void Log(string message)
+    static void Log(string message) => Log(message, LogFile);
+
+    internal static void Log(string message, string logFile)
     {
         try
         {
-            if (!Directory.Exists(CopilotDir))
-                Directory.CreateDirectory(CopilotDir);
-            File.AppendAllText(LogFile, $"[{DateTime.Now:o}] {message}\n");
+            var dir = Path.GetDirectoryName(logFile)!;
+            if (!Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
+            File.AppendAllText(logFile, $"[{DateTime.Now:o}] {message}\n");
         }
         catch { }
     }
 
-    [STAThread]
-    static void Main(string[] args)
+    internal record ParsedArgs(
+        string? ResumeSessionId,
+        bool OpenExisting,
+        bool ShowSettings,
+        string? OpenIdeSessionId,
+        string? WorkDir);
+
+    internal static ParsedArgs ParseArguments(string[] args)
     {
-        Log("Launcher started");
-
-        Application.EnableVisualStyles();
-        Application.SetCompatibleTextRenderingDefault(false);
-
-        // Load settings (creates defaults on first run)
-        _settings = LauncherSettings.Load();
-
-        // Parse arguments
         string? resumeSessionId = null;
         bool openExisting = false;
         bool showSettings = false;
@@ -774,6 +784,28 @@ class Program
                 workDir = args[i];
             }
         }
+
+        return new ParsedArgs(resumeSessionId, openExisting, showSettings, openIdeSessionId, workDir);
+    }
+
+    [STAThread]
+    static void Main(string[] args)
+    {
+        Log("Launcher started");
+
+        Application.EnableVisualStyles();
+        Application.SetCompatibleTextRenderingDefault(false);
+
+        // Load settings (creates defaults on first run)
+        _settings = LauncherSettings.Load();
+
+        // Parse arguments
+        var parsed = ParseArguments(args);
+        string? resumeSessionId = parsed.ResumeSessionId;
+        bool openExisting = parsed.OpenExisting;
+        bool showSettings = parsed.ShowSettings;
+        string? openIdeSessionId = parsed.OpenIdeSessionId;
+        string? workDir = parsed.WorkDir;
 
         // Settings / Existing Sessions / Open IDE share a single MainForm window
         if (showSettings || openExisting || openIdeSessionId != null)
@@ -1003,12 +1035,14 @@ class Program
         catch (Exception ex) { Log($"TryUpdateJumpListWithLock error: {ex.Message}"); }
     }
 
-    static bool ShouldBackgroundUpdate(TimeSpan minInterval)
+    static bool ShouldBackgroundUpdate(TimeSpan minInterval) => ShouldBackgroundUpdate(minInterval, LastUpdateFile);
+
+    internal static bool ShouldBackgroundUpdate(TimeSpan minInterval, string lastUpdateFile)
     {
         try
         {
-            if (!File.Exists(LastUpdateFile)) return true;
-            var lastUpdate = DateTime.Parse(File.ReadAllText(LastUpdateFile).Trim());
+            if (!File.Exists(lastUpdateFile)) return true;
+            var lastUpdate = DateTime.Parse(File.ReadAllText(lastUpdateFile).Trim());
             return DateTime.UtcNow - lastUpdate > minInterval;
         }
         catch { return true; }
@@ -1092,49 +1126,55 @@ class Program
 
     #region PID Registry
 
-    static void RegisterPid(int pid)
+    static void RegisterPid(int pid) => RegisterPid(pid, CopilotDir, PidRegistryFile);
+
+    internal static void RegisterPid(int pid, string copilotDir, string pidRegistryFile)
     {
         try
         {
-            if (!Directory.Exists(CopilotDir))
-                Directory.CreateDirectory(CopilotDir);
+            if (!Directory.Exists(copilotDir))
+                Directory.CreateDirectory(copilotDir);
 
             Dictionary<string, object> registry = new();
-            if (File.Exists(PidRegistryFile))
+            if (File.Exists(pidRegistryFile))
             {
-                try { registry = JsonSerializer.Deserialize<Dictionary<string, object>>(File.ReadAllText(PidRegistryFile)) ?? new(); }
+                try { registry = JsonSerializer.Deserialize<Dictionary<string, object>>(File.ReadAllText(pidRegistryFile)) ?? new(); }
                 catch { }
             }
             registry[pid.ToString()] = new { started = DateTime.Now.ToString("o"), sessionId = (string?)null };
-            File.WriteAllText(PidRegistryFile, JsonSerializer.Serialize(registry));
+            File.WriteAllText(pidRegistryFile, JsonSerializer.Serialize(registry));
         }
         catch { }
     }
 
-    static void UpdatePidSessionId(int pid, string sessionId)
+    static void UpdatePidSessionId(int pid, string sessionId) => UpdatePidSessionId(pid, sessionId, PidRegistryFile);
+
+    internal static void UpdatePidSessionId(int pid, string sessionId, string pidRegistryFile)
     {
         try
         {
-            if (!File.Exists(PidRegistryFile)) return;
-            var json = File.ReadAllText(PidRegistryFile);
+            if (!File.Exists(pidRegistryFile)) return;
+            var json = File.ReadAllText(pidRegistryFile);
             var registry = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json) ?? new();
 
             registry[pid.ToString()] = JsonSerializer.Deserialize<JsonElement>(
                 JsonSerializer.Serialize(new { started = DateTime.Now.ToString("o"), sessionId }));
 
-            File.WriteAllText(PidRegistryFile, JsonSerializer.Serialize(registry));
+            File.WriteAllText(pidRegistryFile, JsonSerializer.Serialize(registry));
         }
         catch { }
     }
 
-    static void UnregisterPid(int pid)
+    static void UnregisterPid(int pid) => UnregisterPid(pid, PidRegistryFile);
+
+    internal static void UnregisterPid(int pid, string pidRegistryFile)
     {
         try
         {
-            if (!File.Exists(PidRegistryFile)) return;
-            var registry = JsonSerializer.Deserialize<Dictionary<string, object>>(File.ReadAllText(PidRegistryFile)) ?? new();
+            if (!File.Exists(pidRegistryFile)) return;
+            var registry = JsonSerializer.Deserialize<Dictionary<string, object>>(File.ReadAllText(pidRegistryFile)) ?? new();
             registry.Remove(pid.ToString());
-            File.WriteAllText(PidRegistryFile, JsonSerializer.Serialize(registry));
+            File.WriteAllText(pidRegistryFile, JsonSerializer.Serialize(registry));
         }
         catch { }
     }
@@ -1143,15 +1183,17 @@ class Program
 
     #region Session Discovery
 
-    static List<SessionInfo> GetActiveSessions()
+    static List<SessionInfo> GetActiveSessions() => GetActiveSessions(PidRegistryFile, SessionStateDir);
+
+    internal static List<SessionInfo> GetActiveSessions(string pidRegistryFile, string sessionStateDir)
     {
         var sessions = new List<SessionInfo>();
-        if (!File.Exists(PidRegistryFile)) return sessions;
+        if (!File.Exists(pidRegistryFile)) return sessions;
 
         Dictionary<string, JsonElement>? pidRegistry;
         try
         {
-            pidRegistry = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(File.ReadAllText(PidRegistryFile));
+            pidRegistry = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(File.ReadAllText(pidRegistryFile));
         }
         catch { return sessions; }
 
@@ -1178,7 +1220,7 @@ class Program
 
                 if (sessionId == null) continue;
 
-                var workspaceFile = Path.Combine(SessionStateDir, sessionId, "workspace.yaml");
+                var workspaceFile = Path.Combine(sessionStateDir, sessionId, "workspace.yaml");
                 if (!File.Exists(workspaceFile)) continue;
 
                 var session = ParseWorkspace(workspaceFile, pid);
@@ -1192,13 +1234,13 @@ class Program
         {
             foreach (var pid in toRemove)
                 pidRegistry.Remove(pid);
-            try { File.WriteAllText(PidRegistryFile, JsonSerializer.Serialize(pidRegistry)); } catch { }
+            try { File.WriteAllText(pidRegistryFile, JsonSerializer.Serialize(pidRegistry)); } catch { }
         }
 
         return sessions;
     }
 
-    static SessionInfo? ParseWorkspace(string path, int pid)
+    internal static SessionInfo? ParseWorkspace(string path, int pid)
     {
         try
         {
@@ -1361,7 +1403,7 @@ class Program
         }
     }
 
-    static string? FindGitRoot(string startPath)
+    internal static string? FindGitRoot(string startPath)
     {
         var dir = startPath;
         while (!string.IsNullOrEmpty(dir))

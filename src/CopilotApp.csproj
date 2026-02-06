@@ -11,6 +11,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="CopilotApp.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <Content Include="copilot.ico" />
   </ItemGroup>
   <ItemGroup>
