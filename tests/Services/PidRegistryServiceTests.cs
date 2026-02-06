@@ -91,6 +91,33 @@
     }
 
     [Fact]
+    public void UpdatePidSessionId_StoresCopilotPid()
+    {
+        PidRegistryService.RegisterPid(1234, this._tempDir, this._pidFile);
+        PidRegistryService.UpdatePidSessionId(1234, "session-abc", this._pidFile, copilotPid: 5678);
+
+        var json = File.ReadAllText(this._pidFile);
+        Assert.Contains("session-abc", json);
+        Assert.Contains("5678", json);
+
+        var registry = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, System.Text.Json.JsonElement>>(json)!;
+        var entry = registry["1234"];
+        Assert.Equal(5678, entry.GetProperty("copilotPid").GetInt32());
+    }
+
+    [Fact]
+    public void UpdatePidSessionId_DefaultCopilotPidIsZero()
+    {
+        PidRegistryService.RegisterPid(1234, this._tempDir, this._pidFile);
+        PidRegistryService.UpdatePidSessionId(1234, "session-abc", this._pidFile);
+
+        var json = File.ReadAllText(this._pidFile);
+        var registry = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, System.Text.Json.JsonElement>>(json)!;
+        var entry = registry["1234"];
+        Assert.Equal(0, entry.GetProperty("copilotPid").GetInt32());
+    }
+
+    [Fact]
     public void UpdatePidSessionId_NoFileExists_DoesNotThrow()
     {
         var nonExistent = Path.Combine(this._tempDir, "no-such-file.json");

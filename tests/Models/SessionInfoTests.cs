@@ -9,6 +9,7 @@
         Assert.Equal("", info.Cwd);
         Assert.Equal("", info.Summary);
         Assert.Equal(0, info.Pid);
+        Assert.Equal(0, info.CopilotPid);
     }
 
     [Fact]
@@ -19,12 +20,14 @@
             Id = "test-id",
             Cwd = @"C:\test",
             Summary = "Test summary",
-            Pid = 42
+            Pid = 42,
+            CopilotPid = 99
         };
 
         Assert.Equal("test-id", info.Id);
         Assert.Equal(@"C:\test", info.Cwd);
         Assert.Equal("Test summary", info.Summary);
         Assert.Equal(42, info.Pid);
+        Assert.Equal(99, info.CopilotPid);
     }
 }
