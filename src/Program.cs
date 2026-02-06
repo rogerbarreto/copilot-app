@@ -607,6 +607,19 @@ class Program
             if (workDir == null) return;
         }
 
+        // When resuming, use the session's original CWD
+        if (resumeSessionId != null && workDir == null)
+        {
+            var wsFile = Path.Combine(SessionStateDir, resumeSessionId, "workspace.yaml");
+            if (File.Exists(wsFile))
+            {
+                foreach (var line in File.ReadAllLines(wsFile))
+                {
+                    if (line.StartsWith("cwd:")) { workDir = line[4..].Trim(); break; }
+                }
+            }
+        }
+
         workDir ??= defaultWorkDir;
 
         Log($"WorkDir: {workDir}, Resume: {resumeSessionId ?? "none"}");
