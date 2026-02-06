@@ -1,14 +1,315 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Windows.Forms;
 using Microsoft.WindowsAPICodePack.Taskbar;
 using Microsoft.WindowsAPICodePack.Shell;
+
+#region Settings Model
+
+class LauncherSettings
+{
+    static readonly string SettingsFile = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".copilot", "launcher-settings.json");
+
+    [JsonPropertyName("allowedTools")]
+    public List<string> AllowedTools { get; set; } = new();
+
+    [JsonPropertyName("allowedDirs")]
+    public List<string> AllowedDirs { get; set; } = new();
+
+    [JsonPropertyName("defaultWorkDir")]
+    public string DefaultWorkDir { get; set; } = "";
+
+    static readonly List<string> DefaultTools = new()
+    {
+        "Block", "Cmd", "Edit", "GlobTool", "GrepTool",
+        "ReadNotebook", "Replace", "View", "Write", "BatchTool",
+        "exit", "mcp__github-mcp-server"
+    };
+
+    public static LauncherSettings Load()
+    {
+        try
+        {
+            if (File.Exists(SettingsFile))
+            {
+                var json = File.ReadAllText(SettingsFile);
+                return JsonSerializer.Deserialize<LauncherSettings>(json) ?? CreateDefault();
+            }
+        }
+        catch { }
+
+        var settings = CreateDefault();
+        settings.Save();
+        return settings;
+    }
+
+    public void Save()
+    {
+        try
+        {
+            var dir = Path.GetDirectoryName(SettingsFile)!;
+            if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            File.WriteAllText(SettingsFile, JsonSerializer.Serialize(this, options));
+        }
+        catch { }
+    }
+
+    static LauncherSettings CreateDefault()
+    {
+        return new LauncherSettings
+        {
+            AllowedTools = new List<string>(DefaultTools),
+            AllowedDirs = new List<string>(),
+            DefaultWorkDir = ""
+        };
+    }
+
+    public string BuildCopilotArgs(string[] extraArgs)
+    {
+        var parts = new List<string>();
+        foreach (var tool in AllowedTools)
+            parts.Add($"--allow-tool={tool}");
+        foreach (var dir in AllowedDirs)
+            parts.Add($"--allow-dir=\"{dir}\"");
+        foreach (var arg in extraArgs)
+            parts.Add(arg);
+        return string.Join(" ", parts);
+    }
+}
+
+#endregion
+
+#region Settings Dialog
+
+class SettingsForm : Form
+{
+    readonly LauncherSettings _settings;
+    readonly ListBox _toolsList;
+    readonly ListBox _dirsList;
+
+    public SettingsForm(LauncherSettings settings, string copilotExePath)
+    {
+        _settings = settings;
+
+        Text = "Copilot Launcher Settings";
+        Size = new Size(700, 550);
+        MinimumSize = new Size(550, 400);
+        StartPosition = FormStartPosition.CenterScreen;
+        FormBorderStyle = FormBorderStyle.Sizable;
+
+        try
+        {
+            var icon = Icon.ExtractAssociatedIcon(copilotExePath);
+            if (icon != null) Icon = icon;
+        }
+        catch { }
+
+        // Tab control for tools vs dirs
+        var tabs = new TabControl { Dock = DockStyle.Fill };
+
+        // --- Allowed Tools tab ---
+        var toolsTab = new TabPage("Allowed Tools");
+        _toolsList = new ListBox { Dock = DockStyle.Fill, IntegralHeight = false };
+        foreach (var tool in _settings.AllowedTools)
+            _toolsList.Items.Add(tool);
+
+        var toolsButtons = CreateListButtons(_toolsList, "Tool name:", "Add Tool", addBrowse: false);
+        toolsTab.Controls.Add(_toolsList);
+        toolsTab.Controls.Add(toolsButtons);
+
+        // --- Allowed Directories tab ---
+        var dirsTab = new TabPage("Allowed Directories");
+        _dirsList = new ListBox { Dock = DockStyle.Fill, IntegralHeight = false };
+        foreach (var dir in _settings.AllowedDirs)
+            _dirsList.Items.Add(dir);
+
+        var dirsButtons = CreateListButtons(_dirsList, "Directory path:", "Add Directory", addBrowse: true);
+        dirsTab.Controls.Add(_dirsList);
+        dirsTab.Controls.Add(dirsButtons);
+
+        tabs.TabPages.Add(toolsTab);
+        tabs.TabPages.Add(dirsTab);
+
+        // --- Default Work Dir ---
+        var workDirPanel = new Panel { Dock = DockStyle.Top, Height = 40, Padding = new Padding(8, 8, 8, 4) };
+        var workDirLabel = new Label { Text = "Default Work Dir:", AutoSize = true, Location = new Point(8, 12) };
+        var workDirBox = new TextBox
+        {
+            Text = _settings.DefaultWorkDir,
+            Location = new Point(130, 9),
+            Width = 400,
+            Anchor = AnchorStyles.Left | AnchorStyles.Top | AnchorStyles.Right
+        };
+        var workDirBrowse = new Button
+        {
+            Text = "...",
+            Width = 30,
+            Location = new Point(535, 8),
+            Anchor = AnchorStyles.Top | AnchorStyles.Right
+        };
+        workDirBrowse.Click += (s, e) =>
+        {
+            using var fbd = new FolderBrowserDialog { SelectedPath = workDirBox.Text };
+            if (fbd.ShowDialog() == DialogResult.OK)
+                workDirBox.Text = fbd.SelectedPath;
+        };
+        workDirPanel.Controls.AddRange(new Control[] { workDirLabel, workDirBox, workDirBrowse });
+
+        // --- Bottom buttons ---
+        var bottomPanel = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Bottom,
+            Height = 45,
+            FlowDirection = FlowDirection.RightToLeft,
+            Padding = new Padding(8, 6, 8, 6)
+        };
+
+        var btnCancel = new Button { Text = "Cancel", Width = 90 };
+        btnCancel.Click += (s, e) => { DialogResult = DialogResult.Cancel; Close(); };
+
+        var btnSave = new Button { Text = "Save", Width = 90 };
+        btnSave.Click += (s, e) =>
+        {
+            _settings.AllowedTools = _toolsList.Items.Cast<string>().ToList();
+            _settings.AllowedDirs = _dirsList.Items.Cast<string>().ToList();
+            _settings.DefaultWorkDir = workDirBox.Text.Trim();
+            _settings.Save();
+            DialogResult = DialogResult.OK;
+            Close();
+        };
+
+        bottomPanel.Controls.Add(btnCancel);
+        bottomPanel.Controls.Add(btnSave);
+
+        Controls.Add(tabs);
+        Controls.Add(workDirPanel);
+        Controls.Add(bottomPanel);
+
+        AcceptButton = btnSave;
+        CancelButton = btnCancel;
+    }
+
+    Panel CreateListButtons(ListBox listBox, string promptText, string addTitle, bool addBrowse)
+    {
+        var panel = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Right,
+            Width = 100,
+            FlowDirection = FlowDirection.TopDown,
+            Padding = new Padding(4)
+        };
+
+        var btnAdd = new Button { Text = "Add", Width = 88 };
+        btnAdd.Click += (s, e) =>
+        {
+            if (addBrowse)
+            {
+                using var fbd = new FolderBrowserDialog();
+                if (fbd.ShowDialog() == DialogResult.OK && !string.IsNullOrEmpty(fbd.SelectedPath))
+                    listBox.Items.Add(fbd.SelectedPath);
+            }
+            else
+            {
+                var value = PromptInput(addTitle, promptText, "");
+                if (!string.IsNullOrWhiteSpace(value))
+                    listBox.Items.Add(value);
+            }
+        };
+
+        var btnEdit = new Button { Text = "Edit", Width = 88 };
+        btnEdit.Click += (s, e) =>
+        {
+            if (listBox.SelectedIndex < 0) return;
+            var current = listBox.SelectedItem?.ToString() ?? "";
+
+            if (addBrowse)
+            {
+                using var fbd = new FolderBrowserDialog { SelectedPath = current };
+                if (fbd.ShowDialog() == DialogResult.OK)
+                    listBox.Items[listBox.SelectedIndex] = fbd.SelectedPath;
+            }
+            else
+            {
+                var value = PromptInput("Edit", promptText, current);
+                if (value != null)
+                    listBox.Items[listBox.SelectedIndex] = value;
+            }
+        };
+
+        var btnRemove = new Button { Text = "Remove", Width = 88 };
+        btnRemove.Click += (s, e) =>
+        {
+            if (listBox.SelectedIndex >= 0)
+                listBox.Items.RemoveAt(listBox.SelectedIndex);
+        };
+
+        var btnUp = new Button { Text = "Move Up", Width = 88 };
+        btnUp.Click += (s, e) =>
+        {
+            int idx = listBox.SelectedIndex;
+            if (idx > 0)
+            {
+                var item = listBox.Items[idx];
+                listBox.Items.RemoveAt(idx);
+                listBox.Items.Insert(idx - 1, item);
+                listBox.SelectedIndex = idx - 1;
+            }
+        };
+
+        var btnDown = new Button { Text = "Move Down", Width = 88 };
+        btnDown.Click += (s, e) =>
+        {
+            int idx = listBox.SelectedIndex;
+            if (idx >= 0 && idx < listBox.Items.Count - 1)
+            {
+                var item = listBox.Items[idx];
+                listBox.Items.RemoveAt(idx);
+                listBox.Items.Insert(idx + 1, item);
+                listBox.SelectedIndex = idx + 1;
+            }
+        };
+
+        panel.Controls.AddRange(new Control[] { btnAdd, btnEdit, btnRemove, btnUp, btnDown });
+        return panel;
+    }
+
+    static string? PromptInput(string title, string label, string defaultValue)
+    {
+        var form = new Form
+        {
+            Text = title,
+            Size = new Size(450, 150),
+            StartPosition = FormStartPosition.CenterParent,
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            MaximizeBox = false,
+            MinimizeBox = false
+        };
+
+        var lbl = new Label { Text = label, Location = new Point(12, 15), AutoSize = true };
+        var txt = new TextBox { Text = defaultValue, Location = new Point(12, 38), Width = 405 };
+        var btnOk = new Button { Text = "OK", DialogResult = DialogResult.OK, Location = new Point(260, 72), Width = 75 };
+        var btnCancel = new Button { Text = "Cancel", DialogResult = DialogResult.Cancel, Location = new Point(342, 72), Width = 75 };
+
+        form.Controls.AddRange(new Control[] { lbl, txt, btnOk, btnCancel });
+        form.AcceptButton = btnOk;
+        form.CancelButton = btnCancel;
+
+        return form.ShowDialog() == DialogResult.OK ? txt.Text : null;
+    }
+}
+
+#endregion
 
 class Program
 {
@@ -23,8 +324,8 @@ class Program
     static readonly string LogFile = Path.Combine(CopilotDir, "launcher.log");
     static readonly string LauncherExePath = Process.GetCurrentProcess().MainModule?.FileName ?? "";
     static readonly string CopilotExePath = FindCopilotExe();
-    static readonly string DefaultWorkDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
+    static LauncherSettings _settings = null!;
     static Form? _hiddenForm;
     static Process? _pwshProcess;
 
@@ -86,9 +387,13 @@ class Program
 
         SetCurrentProcessExplicitAppUserModelID(AppId);
 
+        // Load settings (creates defaults on first run)
+        _settings = LauncherSettings.Load();
+
         // Parse arguments
         string? resumeSessionId = null;
         bool openExisting = false;
+        bool showSettings = false;
         string? workDir = null;
 
         for (int i = 0; i < args.Length; i++)
@@ -102,13 +407,28 @@ class Program
             {
                 openExisting = true;
             }
+            else if (args[i] == "--settings")
+            {
+                showSettings = true;
+            }
             else
             {
                 workDir = args[i];
             }
         }
 
-        workDir ??= Environment.GetEnvironmentVariable("COPILOT_WORK_DIR") ?? DefaultWorkDir;
+        // If settings mode, show settings dialog and exit
+        if (showSettings)
+        {
+            var settingsForm = new SettingsForm(_settings, CopilotExePath);
+            settingsForm.ShowDialog();
+            return;
+        }
+
+        // Resolve work directory: arg > settings > env var > user home
+        workDir ??= !string.IsNullOrEmpty(_settings.DefaultWorkDir) ? _settings.DefaultWorkDir
+            : Environment.GetEnvironmentVariable("COPILOT_WORK_DIR")
+            ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
         // If open-existing mode, show session picker
         if (openExisting)
@@ -179,15 +499,16 @@ class Program
                 ? Directory.GetDirectories(SessionStateDir).Select(d => Path.GetFileName(d) ?? "")
                 : Array.Empty<string>());
 
-        // Launch pwsh + copilot-permissive
-        var copilotCmd = resumeSessionId != null
-            ? $"copilot-permissive --resume {resumeSessionId}"
-            : "copilot-permissive";
+        // Launch copilot directly with allowed tools/dirs from settings
+        var copilotArgs = new List<string>();
+        if (resumeSessionId != null)
+            copilotArgs.Add($"--resume {resumeSessionId}");
+        var settingsArgs = _settings.BuildCopilotArgs(copilotArgs.ToArray());
 
         var psi = new ProcessStartInfo
         {
             FileName = "pwsh.exe",
-            Arguments = $"-NoExit -Command \"{copilotCmd}\"",
+            Arguments = $"-NoExit -Command \"copilot {settingsArgs}\"",
             WorkingDirectory = workDir,
             UseShellExecute = true
         };
@@ -316,7 +637,13 @@ class Program
                 IconReference = new IconReference(CopilotExePath, 0)
             };
 
-            jumpList.AddUserTasks(newSessionTask, new JumpListSeparator(), openExistingTask);
+            var settingsTask = new JumpListLink(LauncherExePath, "Settings")
+            {
+                Arguments = "--settings",
+                IconReference = new IconReference(CopilotExePath, 0)
+            };
+
+            jumpList.AddUserTasks(newSessionTask, new JumpListSeparator(), openExistingTask, new JumpListSeparator(), settingsTask);
 
             var category = new JumpListCustomCategory("Active Sessions");
             foreach (var session in activeSessions)

@@ -3,19 +3,19 @@
     Installs the Copilot Permissive Launcher.
 
 .DESCRIPTION
-    Builds the CopilotPermissive.exe, installs the copilot-permissive function
-    into the PowerShell profile, and creates a shortcut for the taskbar.
+    Builds the CopilotPermissive.exe and optionally sets the default work directory.
+    Settings (allowed tools, directories) are managed via the Settings UI in the app itself.
 
 .PARAMETER PublishDir
     Where to publish the built exe. Default: ~\Documents\CopilotLauncher\publish
 
 .PARAMETER WorkDir
-    Default working directory for new sessions. Default: current directory.
+    Default working directory for new sessions. Saved to launcher settings.
 #>
 
 param(
     [string]$PublishDir = (Join-Path ([Environment]::GetFolderPath("MyDocuments")) "CopilotLauncher\publish"),
-    [string]$WorkDir = (Get-Location).Path
+    [string]$WorkDir = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -45,50 +45,42 @@ if ($LASTEXITCODE -ne 0) {
 Pop-Location
 Write-Host "Published to: $PublishDir" -ForegroundColor Green
 
-# 3. Install profile function
-Write-Host "Installing copilot-permissive function to PowerShell profile..." -ForegroundColor Cyan
-$profilePath = $PROFILE.CurrentUserAllHosts
-if (-not (Test-Path $profilePath)) {
-    New-Item -ItemType File -Path $profilePath -Force | Out-Null
+# 3. Initialize settings if work dir provided
+if ($WorkDir) {
+    $settingsFile = Join-Path $env:USERPROFILE ".copilot\launcher-settings.json"
+    if (Test-Path $settingsFile) {
+        $settings = Get-Content $settingsFile -Raw | ConvertFrom-Json
+        $settings.defaultWorkDir = $WorkDir
+    } else {
+        $settings = @{
+            allowedTools = @(
+                "Block", "Cmd", "Edit", "GlobTool", "GrepTool",
+                "ReadNotebook", "Replace", "View", "Write", "BatchTool",
+                "exit", "mcp__github-mcp-server"
+            )
+            allowedDirs = @()
+            defaultWorkDir = $WorkDir
+        }
+    }
+    $settingsDir = Split-Path $settingsFile
+    if (-not (Test-Path $settingsDir)) { New-Item -ItemType Directory -Path $settingsDir -Force | Out-Null }
+    $settings | ConvertTo-Json -Depth 10 | Set-Content $settingsFile
+    Write-Host "Default work dir set to: $WorkDir" -ForegroundColor Green
 }
 
-$profileContent = Get-Content $profilePath -Raw -ErrorAction SilentlyContinue
-$marker = "# [copilot-permissive] BEGIN"
-$endMarker = "# [copilot-permissive] END"
-
-$functionBlock = @"
-$marker
-$(Get-Content (Join-Path $RepoRoot "profile\copilot-permissive.ps1") -Raw)
-$endMarker
-"@
-
-if ($profileContent -and $profileContent.Contains($marker)) {
-    # Replace existing block
-    $pattern = [regex]::Escape($marker) + "[\s\S]*?" + [regex]::Escape($endMarker)
-    $profileContent = [regex]::Replace($profileContent, $pattern, $functionBlock)
-    Set-Content $profilePath -Value $profileContent -NoNewline
-    Write-Host "Updated existing copilot-permissive function in profile." -ForegroundColor Green
-} else {
-    # Append
-    Add-Content $profilePath -Value "`n$functionBlock"
-    Write-Host "Added copilot-permissive function to profile." -ForegroundColor Green
-}
-
-# 4. Set environment variable for default work dir
-Write-Host "Setting COPILOT_WORK_DIR=$WorkDir" -ForegroundColor Cyan
-[Environment]::SetEnvironmentVariable("COPILOT_WORK_DIR", $WorkDir, "User")
-
-# 5. Summary
+# 4. Summary
 Write-Host ""
 Write-Host "=== Installation Complete ===" -ForegroundColor Green
 Write-Host "Executable:  $PublishDir\CopilotPermissive.exe"
-Write-Host "Profile:     $profilePath"
-Write-Host "Work Dir:    $WorkDir (set via COPILOT_WORK_DIR)"
 Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Yellow
 Write-Host "  1. Run CopilotPermissive.exe"
 Write-Host "  2. Right-click its taskbar icon and select 'Pin to taskbar'"
-Write-Host "  3. Right-click the pinned icon to see the jump list"
+Write-Host "  3. Right-click the pinned icon to access jump list:"
+Write-Host "     - New Copilot Session"
+Write-Host "     - Open Existing Session"
+Write-Host "     - Settings (configure allowed tools and directories)"
 Write-Host ""
-Write-Host "To change the default work directory:" -ForegroundColor Yellow
-Write-Host '  [Environment]::SetEnvironmentVariable("COPILOT_WORK_DIR", "C:\your\path", "User")'
+Write-Host "To configure allowed tools and directories:" -ForegroundColor Yellow
+Write-Host "  Right-click pinned icon → Settings"
+Write-Host "  Or run: CopilotPermissive.exe --settings"

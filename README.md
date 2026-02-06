@@ -3,7 +3,8 @@
 A Windows taskbar launcher for [GitHub Copilot CLI](https://github.com/github/copilot-cli) that provides:
 
 - **Taskbar pinning** with the Copilot icon
-- **Jump list** with active sessions, new session, and open existing session
+- **Jump list** with active sessions, new session, open existing session, and settings
+- **Settings UI** to configure allowed tools and directories (no profile editing needed)
 - **Session picker** dialog to resume any previous session
 - **Background jump list updates** every 5 minutes
 - **Multi-instance coordination** via named mutexes to prevent collisions
@@ -24,6 +25,9 @@ cd copilot-app
 
 # 2. Pin to taskbar
 #    Launch CopilotPermissive.exe, right-click its taskbar icon → "Pin to taskbar"
+
+# 3. Configure
+#    Right-click pinned icon → Settings
 ```
 
 ## Manual Setup
@@ -35,25 +39,42 @@ cd src
 dotnet publish -c Release -o ..\publish
 ```
 
-### Profile Setup
-
-The `install.ps1` script installs the `copilot-permissive` function into your profile automatically.
-
-To customize, edit `profile\copilot-permissive.ps1` before installing, or modify the function block in your profile (between the `# [copilot-permissive] BEGIN/END` markers).
-
 ### Configuration
 
-Set the `COPILOT_WORK_DIR` environment variable to control the default working directory:
+All settings are managed via the **Settings UI** (right-click pinned icon → Settings, or run `CopilotPermissive.exe --settings`).
 
-```powershell
-[Environment]::SetEnvironmentVariable("COPILOT_WORK_DIR", "D:\repo\work", "User")
-```
+Settings are stored in `~/.copilot/launcher-settings.json` and include:
+
+| Setting | Description |
+|---------|-------------|
+| **Allowed Tools** | Tools Copilot is permitted to use without prompting |
+| **Allowed Directories** | Directories Copilot can access |
+| **Default Work Dir** | Working directory for new sessions |
 
 You can also pass a working directory as a command-line argument:
 
 ```powershell
 CopilotPermissive.exe "C:\my\project"
 ```
+
+### Default Allowed Tools
+
+On first run, the following tools are whitelisted:
+
+| Tool | Description |
+|------|-------------|
+| `Block` | Block tool for structured output |
+| `Cmd` | Shell command execution |
+| `Edit` | File editing |
+| `GlobTool` | File pattern matching |
+| `GrepTool` | Content search |
+| `ReadNotebook` | Jupyter notebook reading |
+| `Replace` | String replacement in files |
+| `View` | File/directory viewing |
+| `Write` | File creation |
+| `BatchTool` | Batch operations |
+| `exit` | Session exit |
+| `mcp__github-mcp-server` | GitHub MCP server tools |
 ```
 
 ## Usage
