@@ -5,7 +5,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
 using CopilotApp.Models;
@@ -21,20 +20,6 @@ internal class Program
 {
     private const string UpdaterMutexName = "Global\\CopilotJumpListUpdater";
     private const string UpdateLockName = "Global\\CopilotJumpListUpdateLock";
-
-    private const int SW_RESTORE = 9;
-
-    [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool SetForegroundWindow(IntPtr hWnd);
-
-    [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
-
-    [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool IsIconic(IntPtr hWnd);
 
     private static readonly string s_copilotDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".copilot");
     /// <summary>
@@ -205,25 +190,10 @@ internal class Program
         {
             var activeSessions = SessionService.GetActiveSessions(s_pidRegistryFile, SessionStateDir);
             var existing = activeSessions.FirstOrDefault(s => s.Id == resumeSessionId);
-            if (existing != null)
+            if (existing != null && WindowFocusService.TryFocusProcess(existing.Pid))
             {
-                try
-                {
-                    var proc = Process.GetProcessById(existing.Pid);
-                    IntPtr hwnd = proc.MainWindowHandle;
-                    if (hwnd != IntPtr.Zero)
-                    {
-                        if (IsIconic(hwnd))
-                        {
-                            ShowWindow(hwnd, SW_RESTORE);
-                        }
-
-                        SetForegroundWindow(hwnd);
-                        LogService.Log($"Focused existing session {resumeSessionId} (PID {existing.Pid})", s_logFile);
-                        return;
-                    }
-                }
-                catch { }
+                LogService.Log($"Focused existing session {resumeSessionId} (PID {existing.Pid})", s_logFile);
+                return;
             }
         }
 
@@ -251,7 +221,7 @@ internal class Program
         // Create form - visible in taskbar for jump list but no visible window
         s_hiddenForm = new Form
         {
-            Text = "Copilot App",
+            Text = "Copilot Session",
             ShowInTaskbar = true,
             WindowState = FormWindowState.Minimized,
             FormBorderStyle = FormBorderStyle.SizableToolWindow,
