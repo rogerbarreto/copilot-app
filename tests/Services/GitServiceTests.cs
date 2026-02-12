@@ -57,7 +57,10 @@
     [Fact]
     public void IsGitRepository_ReturnsTrueForGitRepo()
     {
-        var result = GitService.IsGitRepository(@"D:\repo\community\copilot-app");
+        var gitDir = Path.Combine(this._tempDir, "repo");
+        Directory.CreateDirectory(Path.Combine(gitDir, ".git"));
+
+        var result = GitService.IsGitRepository(gitDir);
 
         Assert.True(result);
     }
