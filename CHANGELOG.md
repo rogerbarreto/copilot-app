@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.0] - 2026-02-12
+
+### Added
+
+- **Git workspace creation** — create isolated [git worktrees](https://git-scm.com/docs/git-worktree) from the New Session tab ("Create Workspace" button) or the Existing Sessions dropdown ("Open as New Session Workspace"). Each workspace gets its own branch and directory under `%APPDATA%\CopilotApp\Workspaces\`.
+- **Git column in directory picker** — the New Session tab now shows a "Git" column indicating whether each directory is inside a Git repository (including worktrees).
+- **Session count column** — directory picker column renamed to "# Sessions created" for clarity.
+- **Git indicator on sessions** — sessions with Git-enabled working directories show "- Git" in the date column of the Existing Sessions tab.
+- **Open Session dropdown** — split button with "Open as New Session" and "Open as New Session Workspace" options.
+- **GitService** — new service for branch listing, current branch detection, and worktree creation.
+- 72 new unit tests for `GitService`.
+
+### Changed
+
+- **Tab order** — "New Session" is now the first (default) tab, followed by "Existing Sessions" and "Settings".
+- **Worktree detection** — `FindGitRoot` now detects git worktrees (`.git` file) in addition to standard `.git` directories.
+- Updated README with new screenshots and documentation for all v0.1.0 features.
+
 ## [0.0.3] - 2026-02-10
 
 ### Added
@@ -51,6 +69,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - MIT license.
 - GitHub Actions release workflow with `.zip` artifact publishing.
 
+[0.1.0]: https://github.com/rogerbarreto/copilot-app/compare/v0.0.3...v0.1.0
 [0.0.3]: https://github.com/rogerbarreto/copilot-app/compare/v0.0.2...v0.0.3
 [0.0.2]: https://github.com/rogerbarreto/copilot-app/compare/v0.0.1...v0.0.2
 [0.0.1]: https://github.com/rogerbarreto/copilot-app/releases/tag/v0.0.1

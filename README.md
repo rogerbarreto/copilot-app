@@ -27,22 +27,46 @@ Right-click the pinned icon to access everything:
 When starting a new session, Copilot App shows your most-used working directories — sorted by frequency across all previous sessions. Non-existent paths are automatically cleaned up.
 
 <p align="center">
-  <img src="images/copilot-new-session-cwd-picker.png" alt="CWD picker sorted by usage" width="500">
+  <img src="images/new-session-directory-picker.png" alt="Directory picker with session count and Git columns" width="500">
 </p>
 
-No more typing paths. Just click and go — or hit **Browse...** to pick any folder.
+Each directory shows:
+- **# Sessions created** — how many sessions have used this path
+- **Git** — whether the directory is inside a Git repository (including worktrees)
+
+Click **Start** to launch a session, **Browse...** to pick any folder, or **Create Workspace** to create an isolated Git worktree for the selected directory.
+
+---
+
+### 🌿 Git Workspace Creation
+
+For Git-enabled directories, Copilot App can create isolated workspaces backed by [git worktrees](https://git-scm.com/docs/git-worktree). Each workspace gets its own branch and directory — perfect for working on multiple features in parallel without stashing or switching branches.
+
+Create a workspace from two places:
+- **New Session tab** → select a Git directory → click **Create Workspace**
+- **Existing Sessions tab** → select a session → **Open Session ▾** → **Open as New Session Workspace**
+
+<p align="center">
+  <img src="images/open-session-workspace-dropdown.png" alt="Open as New Session Workspace dropdown" width="250">
+</p>
+
+Workspaces are stored in `%APPDATA%\CopilotApp\Workspaces\` and named after the repository and branch (e.g., `myrepo-feature-xyz`).
 
 ---
 
 ### 🔄 Session Browser
 
-Resume any previous session with full context. Each entry shows the session name, full working directory path, and last-used date.
+Resume any previous session with full context. Each entry shows the session name, working directory, and last-used date. Git-enabled sessions are tagged with **- Git** in the date column.
 
 <p align="center">
-  <img src="images/existing-copilot-sessions-picker.png" alt="Existing sessions browser" width="500">
+  <img src="images/existing-sessions-with-search.png" alt="Existing sessions browser with search" width="500">
 </p>
 
+- **Search** — filter sessions by title, summary, or metadata as you type
 - **Open Session** — resumes the session in its original working directory
+- **Open Session ▾** — dropdown with additional options:
+  - **Open as New Session** — starts a fresh session in the same directory
+  - **Open as New Session Workspace** — creates a Git worktree workspace (Git directories only)
 - **Open in IDE** — jump straight into the code (see below)
 - **Refresh** — reload the session list without reopening the window
 
