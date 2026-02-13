@@ -45,9 +45,17 @@ jobs:
       - name: Create release archive
         run: Compress-Archive -Path publish/* -DestinationPath CopilotApp-win-x64.zip
 
+      - name: Install Inno Setup
+        run: choco install innosetup --yes --no-progress
+
+      - name: Build installer
+        run: iscc installer.iss
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: CopilotApp-win-x64.zip
+          files: |
+            CopilotApp-win-x64.zip
+            installer-output/CopilotApp-Setup.exe
           body_path: CHANGELOG.md
           generate_release_notes: false

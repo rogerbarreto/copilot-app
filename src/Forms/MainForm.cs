@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using CopilotApp.Models;
 using CopilotApp.Services;
@@ -31,12 +32,16 @@ internal class MainForm : Form
     private readonly ListView _cwdListView;
     private readonly Button _btnCreateWorkspace = null!;
     private readonly Dictionary<string, bool> _cwdGitStatus = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ListViewColumnSorter _cwdSorter = new(column: 1, order: SortOrder.Descending);
 
     // Settings tab controls
     private readonly ListBox _toolsList;
     private readonly ListBox _dirsList;
     private readonly ListView _idesList;
     private readonly TextBox _workDirBox;
+
+    // Update banner
+    private readonly LinkLabel _updateLabel;
 
     /// <summary>
     /// Gets the identifier of the currently selected session.
@@ -399,8 +404,10 @@ internal class MainForm : Form
             GridLines = true
         };
         this._cwdListView.Columns.Add("Directory", 350);
-        this._cwdListView.Columns.Add("# Sessions created", 120, HorizontalAlignment.Center);
+        this._cwdListView.Columns.Add("# Sessions created ▼", 120, HorizontalAlignment.Center);
         this._cwdListView.Columns.Add("Git", 50, HorizontalAlignment.Center);
+        this._cwdListView.ListViewItemSorter = this._cwdSorter;
+        this._cwdListView.ColumnClick += this.OnCwdColumnClick;
 
         this._cwdListView.DoubleClick += (s, e) =>
         {
@@ -494,11 +501,65 @@ internal class MainForm : Form
         this._mainTabs.TabPages.Add(this._newSessionTab);
         this._mainTabs.TabPages.Add(this._sessionsTab);
         this._mainTabs.TabPages.Add(this._settingsTab);
+
+        // ===== Update banner =====
+        this._updateLabel = new LinkLabel
+        {
+            Dock = DockStyle.Bottom,
+            TextAlign = ContentAlignment.MiddleCenter,
+            Height = 28,
+            Visible = false,
+            Padding = new Padding(0, 4, 0, 4)
+        };
+        this._updateLabel.LinkClicked += this.OnUpdateLabelClicked;
+
         this.Controls.Add(this._mainTabs);
+        this.Controls.Add(this._updateLabel);
 
         if (initialTab >= 0 && initialTab < this._mainTabs.TabPages.Count)
         {
             this._mainTabs.SelectedIndex = initialTab;
+        }
+
+        this.Shown += (s, e) => _ = CheckForUpdateInBackgroundAsync();
+    }
+
+    private async Task CheckForUpdateInBackgroundAsync()
+    {
+        var update = await UpdateService.CheckForUpdateAsync().ConfigureAwait(false);
+        if (update?.InstallerUrl != null)
+        {
+            this.Invoke(() =>
+            {
+                this._updateLabel.Text = $"\u2B06 Update available: {update.TagName} \u2014 Click to install";
+                this._updateLabel.Tag = update.InstallerUrl;
+                this._updateLabel.Visible = true;
+            });
+        }
+    }
+
+    private async void OnUpdateLabelClicked(object? sender, LinkLabelLinkClickedEventArgs e)
+    {
+        if (this._updateLabel.Tag is not string url)
+        {
+            return;
+        }
+
+        this._updateLabel.Enabled = false;
+        this._updateLabel.Text = "\u2B07 Downloading update...";
+
+        try
+        {
+            await UpdateService.DownloadAndLaunchInstallerAsync(url).ConfigureAwait(false);
+            this.Invoke(() => Application.Exit());
+        }
+        catch (Exception ex)
+        {
+            this.Invoke(() =>
+            {
+                this._updateLabel.Text = $"\u26A0 Download failed: {ex.Message}";
+                this._updateLabel.Enabled = true;
+            });
         }
     }
 
@@ -607,26 +668,51 @@ internal class MainForm : Form
             }
         }
 
-        var sortedCwds = cwdCounts
-            .OrderByDescending(kv => kv.Value)
-            .Select(kv => kv.Key)
-            .ToList();
-
-        foreach (var cwd in sortedCwds)
+        foreach (var kv in cwdCounts)
         {
+            var cwd = kv.Key;
             var isGit = GitService.IsGitRepository(cwd);
             this._cwdGitStatus[cwd] = isGit;
 
             var item = new ListViewItem(cwd) { Tag = cwd };
-            item.SubItems.Add(cwdCounts[cwd].ToString());
+            item.SubItems.Add(kv.Value.ToString());
             item.SubItems.Add(isGit ? "Yes" : "");
             this._cwdListView.Items.Add(item);
         }
+
+        this._cwdListView.Sort();
 
         if (this._cwdListView.Items.Count > 0)
         {
             this._cwdListView.Items[0].Selected = true;
         }
+    }
+
+    private static readonly string[] CwdColumnBaseNames = { "Directory", "# Sessions created", "Git" };
+
+    private void OnCwdColumnClick(object? sender, ColumnClickEventArgs e)
+    {
+        if (e.Column == this._cwdSorter.SortColumn)
+        {
+            this._cwdSorter.Order = this._cwdSorter.Order == SortOrder.Ascending
+                ? SortOrder.Descending
+                : SortOrder.Ascending;
+        }
+        else
+        {
+            this._cwdSorter.SortColumn = e.Column;
+            // Session count defaults to descending; others to ascending
+            this._cwdSorter.Order = e.Column == 1 ? SortOrder.Descending : SortOrder.Ascending;
+        }
+
+        for (int i = 0; i < CwdColumnBaseNames.Length; i++)
+        {
+            this._cwdListView.Columns[i].Text = i == this._cwdSorter.SortColumn
+                ? CwdColumnBaseNames[i] + (this._cwdSorter.Order == SortOrder.Ascending ? " ▲" : " ▼")
+                : CwdColumnBaseNames[i];
+        }
+
+        this._cwdListView.Sort();
     }
 
     private void ReloadSettingsUI()

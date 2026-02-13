@@ -117,10 +117,24 @@ Register your IDEs for the "Open in IDE" feature:
 
 ### Prerequisites
 
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) or later
+- [.NET 10 Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) (or SDK for building from source)
 - [GitHub Copilot CLI](https://docs.github.com/en/copilot/github-copilot-in-the-cli) — install via `winget install GitHub.Copilot` or `GitHub.Copilot.Prerelease`
 
 ### Install
+
+#### Option A: Installer (Recommended)
+
+Download **`CopilotApp-Setup.exe`** from the [latest release](../../releases/latest) and run it.
+
+- Installs to `%APPDATA%\CopilotApp\` — no admin required
+- Creates Start Menu and optional desktop shortcuts
+- Includes uninstaller (Add/Remove Programs)
+
+#### Option B: Portable EXE
+
+Download **`CopilotApp-win-x64.zip`** from the [latest release](../../releases/latest), extract it anywhere, and run `CopilotApp.exe`.
+
+#### Option C: Build from Source
 
 ```powershell
 git clone <repo-url> copilot-app
@@ -139,6 +153,14 @@ cd copilot-app
 ```powershell
 cd src
 dotnet publish -c Release -o ..\publish
+```
+
+### Build Installer (requires [Inno Setup](https://jrsoftware.org/isdownload.php))
+
+```powershell
+dotnet publish src/CopilotApp.csproj -c Release -o publish
+iscc installer.iss
+# Output: installer-output\CopilotApp-Setup.exe
 ```
 
 ---
