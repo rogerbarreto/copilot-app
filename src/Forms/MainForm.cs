@@ -929,6 +929,15 @@ internal class MainForm : Form
             }
         }
         catch { }
+        try
+        {
+            var cachedIds = TerminalCacheService.GetCachedTerminals(Program.TerminalCacheFile);
+            foreach (var id in cachedIds)
+            {
+                ids.Add(id);
+            }
+        }
+        catch { }
         return ids;
     }
 

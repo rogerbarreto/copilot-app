@@ -69,6 +69,7 @@ Resume any previous session with full context. The session list shows four colum
 
 - **Search** — filter sessions by title, folder, or metadata as you type
 - **Active session tracking** — open terminals and IDEs are shown as clickable links; click to focus the window
+- **Terminal persistence** — active terminals survive app restarts; sessions remain "Active" as long as the terminal is running
 - **Persistent window** — the app stays open after launching sessions so you can manage multiple at once
 - **Auto-cleanup** — empty sessions with no activity are automatically removed
 - **Open Session** — resumes the session in its original working directory

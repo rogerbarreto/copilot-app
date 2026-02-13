@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.5.0] - 2026-02-13
+
+### Added
+
+- **Terminal cache across restarts** — active terminal sessions are now cached in `~/.copilot/terminal-cache.json`. When the app restarts, it re-discovers still-running terminals and restores their "Active" status instead of losing track of them.
+- **TerminalCacheService** — new service that persists terminal PIDs on launch, validates them on startup, and garbage-collects dead entries automatically.
+- 7 new unit tests for `TerminalCacheService` (101 total).
+
 ## [0.4.0] - 2026-02-13
 
 ### Added
@@ -90,6 +98,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - MIT license.
 - GitHub Actions release workflow with `.zip` artifact publishing.
 
+[0.5.0]: https://github.com/rogerbarreto/copilot-app/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/rogerbarreto/copilot-app/compare/v0.3.0...v0.4.0
 [0.1.1]: https://github.com/rogerbarreto/copilot-app/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/rogerbarreto/copilot-app/compare/v0.0.3...v0.1.0

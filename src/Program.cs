@@ -27,6 +27,7 @@ internal class Program
     /// </summary>
     internal static readonly string SessionStateDir = Path.Combine(s_copilotDir, "session-state");
     internal static readonly string PidRegistryFile = Path.Combine(s_copilotDir, "active-pids.json");
+    internal static readonly string TerminalCacheFile = Path.Combine(s_copilotDir, "terminal-cache.json");
     private static readonly string s_signalFile = Path.Combine(s_copilotDir, "ui-signal.txt");
     private static readonly string s_lastUpdateFile = Path.Combine(s_copilotDir, "jumplist-lastupdate.txt");
     private static readonly string s_logFile = Path.Combine(s_copilotDir, "launcher.log");
@@ -337,6 +338,7 @@ internal class Program
             {
                 int cmdPid = s_copilotProcess?.Id ?? 0;
                 PidRegistryService.UpdatePidSessionId(myPid, sessionId, PidRegistryFile, copilotPid: cmdPid);
+                TerminalCacheService.CacheTerminal(TerminalCacheFile, sessionId, cmdPid);
                 LogService.Log($"Mapped PID {myPid} to session {sessionId}, cmd PID {cmdPid}", s_logFile);
             }
 
@@ -349,6 +351,11 @@ internal class Program
             {
                 s_copilotProcess?.WaitForExit();
                 LogService.Log("copilot exited", s_logFile);
+
+                if (sessionId != null)
+                {
+                    TerminalCacheService.RemoveTerminal(TerminalCacheFile, sessionId);
+                }
 
                 PidRegistryService.UnregisterPid(myPid, PidRegistryFile);
                 JumpListService.TryUpdateJumpListWithLock(UpdateLockName, s_lastUpdateFile, s_launcherExePath, CopilotExePath, PidRegistryFile, SessionStateDir, s_logFile, s_hiddenForm);
