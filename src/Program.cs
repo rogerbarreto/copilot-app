@@ -22,21 +22,30 @@ internal class Program
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern bool SetWindowText(IntPtr hWnd, string lpString);
 
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    private static extern int SetCurrentProcessExplicitAppUserModelID(string appId);
+
+    private const string AppUserModelId = "CopilotBooster";
+
     private const string UpdaterMutexName = "Global\\CopilotJumpListUpdater";
     private const string UpdateLockName = "Global\\CopilotJumpListUpdateLock";
     private const string MainFormMutexName = "Local\\CopilotBoosterMainForm";
 
     private static readonly string s_copilotDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".copilot");
     /// <summary>
-    /// Directory path for persisted session state.
+    /// Directory path for CopilotBooster application data in %APPDATA%.
+    /// </summary>
+    internal static readonly string AppDataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CopilotBooster");
+    /// <summary>
+    /// Directory path for persisted session state (owned by copilot CLI).
     /// </summary>
     internal static readonly string SessionStateDir = Path.Combine(s_copilotDir, "session-state");
-    internal static readonly string PidRegistryFile = Path.Combine(s_copilotDir, "active-pids.json");
-    internal static readonly string TerminalCacheFile = Path.Combine(s_copilotDir, "terminal-cache.json");
-    internal static readonly string IdeCacheFile = Path.Combine(s_copilotDir, "ide-cache.json");
-    private static readonly string s_signalFile = Path.Combine(s_copilotDir, "ui-signal.txt");
-    private static readonly string s_lastUpdateFile = Path.Combine(s_copilotDir, "jumplist-lastupdate.txt");
-    private static readonly string s_logFile = Path.Combine(s_copilotDir, "launcher.log");
+    internal static readonly string PidRegistryFile = Path.Combine(AppDataDir, "active-pids.json");
+    internal static readonly string TerminalCacheFile = Path.Combine(AppDataDir, "terminal-cache.json");
+    internal static readonly string IdeCacheFile = Path.Combine(AppDataDir, "ide-cache.json");
+    private static readonly string s_signalFile = Path.Combine(AppDataDir, "ui-signal.txt");
+    private static readonly string s_lastUpdateFile = Path.Combine(AppDataDir, "jumplist-lastupdate.txt");
+    private static readonly string s_logFile = Path.Combine(AppDataDir, "launcher.log");
     private static readonly string s_launcherExePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName ?? "";
     /// <summary>
     /// Absolute path to the Copilot CLI executable.
@@ -50,6 +59,68 @@ internal class Program
     private static Form? s_hiddenForm;
     private static Process? s_copilotProcess;
     private static MainForm? s_mainForm;
+
+    /// <summary>
+    /// Migrates CopilotBooster-owned files from the old ~/.copilot/ location to %APPDATA%\CopilotBooster\.
+    /// This is a one-time migration that runs on startup. Failure does not prevent startup.
+    /// </summary>
+    private static void MigrateFromCopilotDir()
+    {
+        try
+        {
+            // List of files to migrate from old location to new location
+            string[] filesToMigrate = new[]
+            {
+                "active-pids.json",
+                "terminal-cache.json",
+                "ide-cache.json",
+                "ui-signal.txt",
+                "jumplist-lastupdate.txt",
+                "launcher.log",
+                "launcher-settings.json",
+                "pinned-directories.json"
+            };
+
+            bool migrationOccurred = false;
+
+            foreach (string fileName in filesToMigrate)
+            {
+                string oldPath = Path.Combine(s_copilotDir, fileName);
+                string newPath = Path.Combine(AppDataDir, fileName);
+
+                // Check if file exists in old location and not in new location
+                if (File.Exists(oldPath) && !File.Exists(newPath))
+                {
+                    try
+                    {
+                        // Copy from old location to new location
+                        File.Copy(oldPath, newPath, overwrite: false);
+
+                        // Delete the old file after successful copy
+                        File.Delete(oldPath);
+
+                        migrationOccurred = true;
+                        LogService.Log($"Migrated {fileName} from ~/.copilot/ to %APPDATA%\\CopilotBooster\\", s_logFile);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log individual file migration failure but continue with other files
+                        LogService.Log($"Failed to migrate {fileName}: {ex.Message}", s_logFile);
+                    }
+                }
+            }
+
+            if (migrationOccurred)
+            {
+                LogService.Log("File migration completed successfully", s_logFile);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Wrap in try/catch so migration failure does not prevent startup
+            LogService.Log($"Migration error: {ex.Message}", s_logFile);
+        }
+    }
 
     /// <summary>
     /// Parses command-line arguments into a structured <see cref="ParsedArgs"/> result.
@@ -102,6 +173,15 @@ internal class Program
     [ExcludeFromCodeCoverage]
     private static void Main(string[] args)
     {
+        // Set AppUserModelID so Windows associates our JumpList with the correct taskbar button
+        SetCurrentProcessExplicitAppUserModelID(AppUserModelId);
+
+        // Ensure AppDataDir exists before any file operations
+        Directory.CreateDirectory(AppDataDir);
+
+        // Perform one-time migration of files from old location
+        MigrateFromCopilotDir();
+
         LogService.Log("Launcher started", s_logFile);
 
         Application.EnableVisualStyles();

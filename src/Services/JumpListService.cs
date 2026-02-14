@@ -131,19 +131,19 @@ internal class JumpListService
             var newSessionTask = new JumpListLink(launcherExePath, "New Copilot Session")
             {
                 Arguments = "--new-session",
-                IconReference = new IconReference(copilotExePath, 0)
+                IconReference = new IconReference(launcherExePath, 0)
             };
 
             var openExistingTask = new JumpListLink(launcherExePath, "Existing Sessions")
             {
                 Arguments = "--open-existing",
-                IconReference = new IconReference(copilotExePath, 0)
+                IconReference = new IconReference(launcherExePath, 0)
             };
 
             var settingsTask = new JumpListLink(launcherExePath, "Settings")
             {
                 Arguments = "--settings",
-                IconReference = new IconReference(copilotExePath, 0)
+                IconReference = new IconReference(launcherExePath, 0)
             };
 
             jumpList.AddUserTasks(newSessionTask, new JumpListSeparator(), openExistingTask, new JumpListSeparator(), settingsTask);
@@ -156,7 +156,7 @@ internal class JumpListService
                     var link = new JumpListLink(launcherExePath, session.Summary)
                     {
                         Arguments = $"--resume {session.Id}",
-                        IconReference = new IconReference(copilotExePath, 0),
+                        IconReference = new IconReference(launcherExePath, 0),
                         WorkingDirectory = session.Cwd
                     };
                     category.AddJumpListItems(link);

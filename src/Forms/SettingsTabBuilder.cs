@@ -13,7 +13,7 @@ namespace CopilotBooster.Forms;
 internal static class SettingsTabBuilder
 {
     /// <summary>
-    /// Creates a panel with Add, Edit, Remove, Move Up, and Move Down buttons for a <see cref="ListBox"/>.
+    /// Creates a panel with Add, Edit, and Remove buttons for a <see cref="ListBox"/>.
     /// </summary>
     /// <param name="listBox">The list box to manage.</param>
     /// <param name="promptText">The label shown in the input prompt dialog.</param>
@@ -127,7 +127,7 @@ internal static class SettingsTabBuilder
             }
         };
 
-        panel.Controls.AddRange([btnAdd, btnEdit, btnRemove, btnUp, btnDown]);
+        panel.Controls.AddRange([btnAdd, btnEdit, btnRemove]);
         return panel;
     }
 

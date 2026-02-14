@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.8.0] - 2026-02-14
+
+### Added
+
+- **System tray icon** — the app now lives in the system tray with a context menu (Show, Settings, Quit). Closing the window minimizes to tray instead of exiting; only "Quit" from the tray menu exits the application.
+- **AppData migration** — CopilotBooster state files (settings, caches, logs) moved from `~/.copilot/` to `%APPDATA%\CopilotBooster\`. Existing files are migrated automatically on first startup.
+- **Session start event** — new sessions now write an `events.jsonl` with a `session.start` event, matching the format expected by Copilot CLI.
+- **Release process documentation** — added full release checklist to `.github/copilot-instructions.md`.
+
+### Fixed
+
+- **Session creation** — replaced broken SDK-based session creation with direct `workspace.yaml` + `events.jsonl` file creation. The `id` field required by Copilot CLI is now always present.
+- **JumpList after rename** — set `AppUserModelID` on the process so Windows associates the JumpList with the correct taskbar button after the CopilotApp→CopilotBooster rename.
+- **Grid refresh after session creation** — the session list now auto-refreshes after creating a new session.
+
+### Changed
+
+- **Settings UI** — removed Move Up/Move Down buttons from Allowed Tools and Directories lists.
+
+### Removed
+
+- **GitHub.Copilot.SDK dependency** — replaced with direct file creation for session management.
+
 ## [0.7.1] - 2026-02-14
 
 ### Fixed
@@ -180,6 +203,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - MIT license.
 - GitHub Actions release workflow with `.zip` artifact publishing.
 
+[0.8.0]: https://github.com/rogerbarreto/copilot-app/compare/v0.7.1...v0.8.0
 [0.6.3]: https://github.com/rogerbarreto/copilot-app/compare/v0.6.2...v0.6.3
 [0.6.2]: https://github.com/rogerbarreto/copilot-app/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/rogerbarreto/copilot-app/compare/v0.6.0...v0.6.1

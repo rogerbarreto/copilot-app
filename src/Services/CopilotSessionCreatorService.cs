@@ -78,7 +78,7 @@ internal static class CopilotSessionCreatorService
         catch (Exception ex)
         {
             LogService.Log($"Failed to create session: {ex.Message}",
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".copilot", "launcher.log"));
+                Path.Combine(Program.AppDataDir, "launcher.log"));
             return Task.FromResult<string?>(null);
         }
     }

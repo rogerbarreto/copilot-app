@@ -48,6 +48,10 @@ internal class MainForm : Form
     // Update banner
     private LinkLabel _updateLabel = null!;
 
+    // System tray
+    private NotifyIcon? _trayIcon;
+    private bool _forceClose;
+
     /// <summary>
     /// Gets the identifier of the currently selected session.
     /// </summary>
@@ -70,6 +74,7 @@ internal class MainForm : Form
         this.BuildSettingsTab();
         this.BuildNewSessionTab();
         this.SetupUpdateBanner();
+        this.SetupTrayIcon();
 
         this._mainTabs.TabPages.Add(this._newSessionTab);
         this._mainTabs.TabPages.Add(this._sessionsTab);
@@ -97,6 +102,96 @@ internal class MainForm : Form
             }
         }
         catch { }
+    }
+
+    private void SetupTrayIcon()
+    {
+        var trayMenu = new ContextMenuStrip();
+        trayMenu.Items.Add("Show", null, (s, e) => this.RestoreFromTray());
+        trayMenu.Items.Add("Settings", null, (s, e) => this.ShowTab(2));
+        trayMenu.Items.Add(new ToolStripSeparator());
+        trayMenu.Items.Add("Quit", null, (s, e) =>
+        {
+            this._forceClose = true;
+            Application.Exit();
+        });
+
+        // Load icon: try .ico file next to exe, then extract from exe, then form default
+        Icon? trayIconImage = null;
+        try
+        {
+            var icoPath = Path.Combine(AppContext.BaseDirectory, "copilot.ico");
+            if (File.Exists(icoPath))
+            {
+                trayIconImage = new Icon(icoPath);
+            }
+            else
+            {
+                trayIconImage = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+            }
+        }
+        catch { }
+
+        trayIconImage ??= this.Icon ?? SystemIcons.Application;
+
+        this._trayIcon = new NotifyIcon
+        {
+            Icon = trayIconImage,
+            Text = "Copilot Booster",
+            ContextMenuStrip = trayMenu,
+            Visible = true,
+        };
+        this._trayIcon.DoubleClick += (s, e) => this.RestoreFromTray();
+    }
+
+    private void ShowTab(int tabIndex)
+    {
+        this.RestoreFromTray();
+        if (tabIndex >= 0 && tabIndex < this._mainTabs.TabPages.Count)
+        {
+            this._mainTabs.SelectedIndex = tabIndex;
+        }
+    }
+
+    /// <summary>
+    /// Restores the window from the system tray.
+    /// </summary>
+    private void RestoreFromTray()
+    {
+        this.Show();
+        this.WindowState = FormWindowState.Normal;
+        this.Activate();
+    }
+
+    /// <summary>
+    /// Forces a real close (bypassing minimize-to-tray) and exits the application.
+    /// </summary>
+    internal void ForceClose()
+    {
+        this._forceClose = true;
+        this.Close();
+    }
+
+    /// <inheritdoc/>
+    protected override void OnFormClosing(FormClosingEventArgs e)
+    {
+        if (!this._forceClose && e.CloseReason == CloseReason.UserClosing)
+        {
+            e.Cancel = true;
+            this.WindowState = FormWindowState.Minimized;
+            this.Hide();
+
+            return;
+        }
+
+        if (this._trayIcon != null)
+        {
+            this._trayIcon.Visible = false;
+            this._trayIcon.Dispose();
+            this._trayIcon = null;
+        }
+
+        base.OnFormClosing(e);
     }
 
     private void BuildSessionsTab()
@@ -927,7 +1022,11 @@ internal class MainForm : Form
         try
         {
             await UpdateService.DownloadAndLaunchInstallerAsync(url).ConfigureAwait(false);
-            this.Invoke(() => Application.Exit());
+            this.Invoke(() =>
+            {
+                this._forceClose = true;
+                Application.Exit();
+            });
         }
         catch (Exception ex)
         {
@@ -977,6 +1076,12 @@ internal class MainForm : Form
         if (this.WindowState == FormWindowState.Minimized)
         {
             this.WindowState = FormWindowState.Normal;
+        }
+
+        // Restore from tray if hidden
+        if (!this.Visible)
+        {
+            this.Show();
         }
 
         this.BringToFront();

@@ -5,7 +5,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>copilot.ico</ApplicationIcon>
     <AssemblyName>CopilotBooster</AssemblyName>
-    <Version>0.7.1</Version>
+    <Version>0.8.0</Version>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>false</SelfContained>
     <Nullable>enable</Nullable>
@@ -13,10 +13,11 @@
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="CopilotBooster.Tests" />
-    <InternalsVisibleTo Include="CopilotBooster.E2E" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="copilot.ico" />
+    <Content Include="copilot.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="session.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

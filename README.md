@@ -173,6 +173,20 @@ Copilot Booster checks for new versions on startup via the GitHub Releases API. 
 
 ---
 
+### 🔔 System Tray
+
+Copilot Booster lives in your system tray for instant access. Closing the window minimizes to tray instead of exiting — only **Quit** from the tray menu exits the application.
+
+<p align="center">
+  <img src="images/tray-menu.png" alt="System tray context menu with Show, Settings, and Quit" width="150">
+</p>
+
+- **Double-click** the tray icon to show/restore the window
+- **Right-click** for quick access to Show, Settings, or Quit
+- The tray icon is always visible while the app is running
+
+---
+
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -242,10 +256,11 @@ CopilotBooster.exe --settings             # Open settings
 
 ```
 CopilotBooster.exe (WinForms, persistent taskbar window)
-├── Sets AppUserModelID for taskbar grouping
-├── Registers PID → session mapping in ~/.copilot/active-pids.json
+├── System tray icon (always visible, minimize-to-tray on close)
+├── Sets AppUserModelID for taskbar/JumpList association
+├── Registers PID → session mapping in %APPDATA%\CopilotBooster\active-pids.json
 ├── Launches copilot.exe with --allow-tool and --add-dir from settings
-├── Detects new session via directory snapshot (before/after launch)
+├── Creates session workspace.yaml + events.jsonl for new sessions
 ├── Active context tracking (Terminal, Copilot CLI, IDE, Edge)
 │   ├── PID registry + process scanning for terminals
 │   ├── Window title matching for Copilot CLI detection
@@ -262,6 +277,7 @@ CopilotBooster.exe (WinForms, persistent taskbar window)
 |---------|---------|
 | `ActiveStatusTracker` | Aggregates active status across all context types |
 | `SessionDataService` | Unified session loading with Git detection caching |
+| `CopilotSessionCreatorService` | Creates new sessions with workspace.yaml and events.jsonl |
 | `EdgeWorkspaceService` | Edge browser workspace lifecycle and UI Automation |
 | `TerminalCacheService` | Persists terminal sessions across app restarts |
 | `WindowFocusService` | HWND-based window focusing with P/Invoke |
@@ -272,12 +288,13 @@ CopilotBooster.exe (WinForms, persistent taskbar window)
 
 | Path | Purpose |
 |------|---------|
-| `~/.copilot/launcher-settings.json` | Tools, directories, IDEs, default work dir |
-| `~/.copilot/active-pids.json` | PID → session ID mapping |
-| `~/.copilot/terminal-cache.json` | Cached terminal sessions for restart persistence |
-| `~/.copilot/jumplist-lastupdate.txt` | Update coordination timestamp |
-| `~/.copilot/launcher.log` | Debug log |
-| `~/.copilot/pinned-directories.json` | Manually-added directories for New Session tab |
+| `%APPDATA%\CopilotBooster\launcher-settings.json` | Tools, directories, IDEs, default work dir |
+| `%APPDATA%\CopilotBooster\active-pids.json` | PID → session ID mapping |
+| `%APPDATA%\CopilotBooster\terminal-cache.json` | Cached terminal sessions for restart persistence |
+| `%APPDATA%\CopilotBooster\ide-cache.json` | Cached IDE window handles for restart persistence |
+| `%APPDATA%\CopilotBooster\jumplist-lastupdate.txt` | Update coordination timestamp |
+| `%APPDATA%\CopilotBooster\launcher.log` | Debug log |
+| `%APPDATA%\CopilotBooster\pinned-directories.json` | Manually-added directories for New Session tab |
 | `~/.copilot/session-state/` | Session metadata (managed by Copilot CLI) |
 
 ---

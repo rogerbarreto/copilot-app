@@ -1,6 +1,4 @@
-﻿
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -13,7 +11,7 @@ namespace CopilotBooster.Models;
 internal class LauncherSettings
 {
     private static readonly string s_settingsFile = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".copilot", "launcher-settings.json");
+        Program.AppDataDir, "launcher-settings.json");
 
     private static readonly JsonSerializerOptions s_writeOptions = new() { WriteIndented = true };
 

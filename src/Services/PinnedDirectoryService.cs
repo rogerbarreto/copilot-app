@@ -12,7 +12,7 @@ namespace CopilotBooster.Services;
 internal static class PinnedDirectoryService
 {
     private static readonly string s_pinnedFile = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".copilot", "pinned-directories.json");
+        Program.AppDataDir, "pinned-directories.json");
 
     /// <summary>
     /// Loads the list of pinned directories from disk.

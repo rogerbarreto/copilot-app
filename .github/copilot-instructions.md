@@ -3,6 +3,7 @@
 ## Git Commits
 
 - Keep commit messages concise and descriptive.
+- Never add `Co-authored-by` trailers to git commits.
 
 ## Code Style
 
@@ -10,16 +11,30 @@
 - `dotnet format` enforced — run before committing.
 - Internal classes visible to tests via `InternalsVisibleTo`.
 
-## Testing
+## Build & Test
 
+- Always use `--tl:off` for `dotnet build` and `dotnet test` (disables terminal logger). This flag does NOT work with `dotnet format`.
 - xUnit (not MSTest).
 - Validate assertions with integration tests whenever possible.
+- All tests must pass before any release.
 
-## Release
+## Release Process
 
-- Follows [Semantic Versioning](https://semver.org/): patch for bug fixes, minor for new features. No major bumps until GA.
-- When unsure about version bump type, ask before bumping.
-- Update version in both `CopilotBooster.csproj` and `installer.iss`.
-- Update `CHANGELOG.md` before tagging.
-- Update `README.md` for every release: add new features/sections when applicable, or at minimum verify version references are current.
-- Push `v<version>` tag to trigger release CI.
+### Before Release
+
+1. Decide version bump — patch for bug fixes, minor for new features (semver, no major bumps until GA). When unsure, ask before bumping.
+2. Update version in both `src/CopilotBooster.csproj` and `installer.iss`.
+3. Update `CHANGELOG.md` with the new version's changes.
+4. Update `README.md` — add new features/sections when applicable, or at minimum verify version references are current.
+5. Run `dotnet format` — ensure code is clean.
+6. Run `dotnet test --tl:off` — all tests must pass.
+7. Commit all changes with a descriptive message.
+8. Tag with `v<version>` (e.g., `git tag v0.8.0`).
+
+### Push Release
+
+9. `git push origin main --tags` — push commit and tag.
+10. The `v*` tag triggers the `release.yml` CI workflow which:
+    - Publishes `CopilotBooster-win-x64.zip` (portable).
+    - Builds `CopilotBooster-Setup.exe` via Inno Setup (installed via choco in CI).
+    - Uploads both artifacts to a GitHub Release.
