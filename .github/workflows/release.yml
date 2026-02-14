@@ -51,11 +51,25 @@ jobs:
       - name: Build installer
         run: iscc installer.iss
 
+      - name: Extract release notes
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}" -replace '^v', ''
+          $lines = Get-Content CHANGELOG.md
+          $capture = $false
+          $notes = @()
+          foreach ($line in $lines) {
+            if ($line -match "^## \[$tag\]") { $capture = $true; continue }
+            if ($capture -and $line -match "^## \[") { break }
+            if ($capture) { $notes += $line }
+          }
+          ($notes -join "`n").Trim() | Out-File release-notes.md -Encoding utf8
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             CopilotApp-win-x64.zip
             installer-output/CopilotApp-Setup.exe
-          body_path: CHANGELOG.md
+          body_path: release-notes.md
           generate_release_notes: false
