@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.6.2] - 2026-02-14
+
+### Fixed
+
+- **Copilot CLI active tracking with dynamic titles** — Copilot CLI changes the terminal title while working (e.g., `🤖 Fixing emoji prefix` instead of the session name). Active tracking now strips leading emoji prefixes and caches window handles so sessions stay active even when the title changes dynamically.
+- 8 new unit tests for emoji stripping (112 total).
+
 ## [0.6.1] - 2026-02-14
 
 ### Changed
@@ -128,6 +135,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - MIT license.
 - GitHub Actions release workflow with `.zip` artifact publishing.
 
+[0.6.2]: https://github.com/rogerbarreto/copilot-app/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/rogerbarreto/copilot-app/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/rogerbarreto/copilot-app/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/rogerbarreto/copilot-app/compare/v0.4.0...v0.5.0
