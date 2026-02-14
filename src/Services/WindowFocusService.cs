@@ -39,6 +39,10 @@ internal static partial class WindowFocusService
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool IsWindowVisible(IntPtr hWnd);
 
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool IsWindow(IntPtr hWnd);
+
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
 #pragma warning disable SYSLIB1054
     private static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder lpString, int nMaxCount);
@@ -161,13 +165,17 @@ internal static partial class WindowFocusService
     /// Returns results grouped by session ID with display label and window title.
     /// Matches: "Terminal - {id}", "Terminal #N - {id}", "Copilot CLI - {id}",
     /// and optionally matches window titles equal to known session summaries.
+    /// Previously tracked HWNDs are re-validated as a fallback when titles change dynamically.
     /// </summary>
     /// <param name="sessionSummaries">Optional mapping of session summary to session ID for title matching.</param>
+    /// <param name="previouslyTracked">Previously tracked windows to re-validate if title matching fails.</param>
     /// <returns>A dictionary mapping session IDs to lists of (label, windowTitle, hwnd) tuples.</returns>
     internal static Dictionary<string, List<(string Label, string Title, IntPtr Hwnd)>> FindTrackedWindows(
-        Dictionary<string, string>? sessionSummaries = null)
+        Dictionary<string, string>? sessionSummaries = null,
+        Dictionary<string, List<(string Label, string Title, IntPtr Hwnd)>>? previouslyTracked = null)
     {
         var results = new Dictionary<string, List<(string, string, IntPtr)>>(StringComparer.OrdinalIgnoreCase);
+        var matchedHwnds = new HashSet<IntPtr>();
 
         EnumWindows((hwnd, _) =>
         {
@@ -230,10 +238,46 @@ internal static partial class WindowFocusService
                     results[sessionId] = new List<(string, string, IntPtr)>();
                 }
                 results[sessionId].Add((label, title, hwnd));
+                matchedHwnds.Add(hwnd);
             }
 
             return true;
         }, IntPtr.Zero);
+
+        // Fallback: re-validate previously tracked HWNDs that weren't matched by title
+        // (Copilot CLI changes the terminal title dynamically while working)
+        if (previouslyTracked != null)
+        {
+            foreach (var kvp in previouslyTracked)
+            {
+                if (results.ContainsKey(kvp.Key))
+                {
+                    continue;
+                }
+
+                foreach (var (label, _, prevHwnd) in kvp.Value)
+                {
+                    if (!matchedHwnds.Contains(prevHwnd) && IsWindow(prevHwnd) && IsWindowVisible(prevHwnd))
+                    {
+                        // Read current title for display
+                        int len = GetWindowTextLength(prevHwnd);
+                        var currentTitle = "";
+                        if (len > 0)
+                        {
+                            var sb = new System.Text.StringBuilder(len + 1);
+                            GetWindowText(prevHwnd, sb, sb.Capacity);
+                            currentTitle = sb.ToString();
+                        }
+
+                        if (!results.ContainsKey(kvp.Key))
+                        {
+                            results[kvp.Key] = new List<(string, string, IntPtr)>();
+                        }
+                        results[kvp.Key].Add((label, currentTitle, prevHwnd));
+                    }
+                }
+            }
+        }
 
         return results;
     }

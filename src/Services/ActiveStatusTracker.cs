@@ -247,7 +247,8 @@ internal class ActiveStatusTracker
         this._activeSessionIds = this.LoadActiveSessionIds();
 
         // Scan for open tracked windows by title (including session-summary matching)
-        this._activeTrackedWindows = WindowFocusService.FindTrackedWindows(BuildSessionSummaryMap(sessions));
+        // Pass previously tracked HWNDs as fallback for Copilot CLI windows whose titles change dynamically
+        this._activeTrackedWindows = WindowFocusService.FindTrackedWindows(BuildSessionSummaryMap(sessions), this._activeTrackedWindows);
 
         // Sync terminal cache with actual open windows
         var openTerminalIds = new HashSet<string>(this._activeTrackedWindows.Keys, StringComparer.OrdinalIgnoreCase);
