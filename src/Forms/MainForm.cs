@@ -24,28 +24,28 @@ internal class MainForm : Form
     private readonly TabPage _settingsTab;
 
     // Sessions tab controls
-    private readonly TextBox _searchBox;
-    private readonly DataGridView _sessionGrid;
-    private readonly SessionGridController _gridController;
+    private TextBox _searchBox = null!;
+    private DataGridView _sessionGrid = null!;
+    private SessionGridController _gridController = null!;
     private List<NamedSession> _cachedSessions = new();
     private readonly ActiveStatusTracker _activeTracker = new();
-    private readonly Timer? _activeStatusTimer;
+    private Timer? _activeStatusTimer;
 
     // New Session tab controls
-    private readonly ListView _cwdListView;
-    private readonly Button _btnCreateWorkspace = null!;
+    private ListView _cwdListView = null!;
+    private Button _btnCreateWorkspace = null!;
     private readonly Dictionary<string, bool> _cwdGitStatus = new(StringComparer.OrdinalIgnoreCase);
     private readonly NewSessionTabBuilder _newSessionTabBuilder = new();
     private readonly SessionDataService _sessionDataService = new();
 
     // Settings tab controls
-    private readonly ListBox _toolsList;
-    private readonly ListBox _dirsList;
-    private readonly ListView _idesList;
-    private readonly TextBox _workDirBox;
+    private ListBox _toolsList = null!;
+    private ListBox _dirsList = null!;
+    private ListView _idesList = null!;
+    private TextBox _workDirBox = null!;
 
     // Update banner
-    private readonly LinkLabel _updateLabel;
+    private LinkLabel _updateLabel = null!;
 
     /// <summary>
     /// Gets the identifier of the currently selected session.
@@ -63,6 +63,29 @@ internal class MainForm : Form
     /// <param name="initialTab">The zero-based index of the tab to display on startup.</param>
     public MainForm(int initialTab = 0)
     {
+        InitializeFormProperties();
+
+        this._mainTabs = new TabControl { Dock = DockStyle.Fill };
+        this._sessionsTab = new TabPage("Existing Sessions");
+        this._settingsTab = new TabPage("Settings");
+        this._newSessionTab = new TabPage("New Session");
+
+        BuildSessionsTab();
+        BuildSettingsTab();
+        BuildNewSessionTab();
+        SetupUpdateBanner();
+
+        this._mainTabs.TabPages.Add(this._newSessionTab);
+        this._mainTabs.TabPages.Add(this._sessionsTab);
+        this._mainTabs.TabPages.Add(this._settingsTab);
+        this.Controls.Add(this._mainTabs);
+        this.Controls.Add(this._updateLabel);
+
+        SetupTimersAndEvents(initialTab);
+    }
+
+    private void InitializeFormProperties()
+    {
         this.Text = "Copilot App";
         this.Size = new Size(1000, 550);
         this.MinimumSize = new Size(550, 400);
@@ -78,12 +101,23 @@ internal class MainForm : Form
             }
         }
         catch { }
+    }
 
-        this._mainTabs = new TabControl { Dock = DockStyle.Fill };
+    private void BuildSessionsTab()
+    {
+        InitializeSessionGrid();
+        var searchPanel = BuildSearchPanel();
+        this._gridController = new SessionGridController(this._sessionGrid, this._activeTracker);
+        BuildGridContextMenu();
+        var buttonPanel = BuildSessionButtonPanel();
 
-        // ===== Sessions Tab =====
-        this._sessionsTab = new TabPage("Existing Sessions");
+        this._sessionsTab.Controls.Add(this._sessionGrid);
+        this._sessionsTab.Controls.Add(searchPanel);
+        this._sessionsTab.Controls.Add(buttonPanel);
+    }
 
+    private void InitializeSessionGrid()
+    {
         this._sessionGrid = new DataGridView
         {
             Dock = DockStyle.Fill,
@@ -115,7 +149,6 @@ internal class MainForm : Form
         this._sessionGrid.Columns["Active"]!.Width = 100;
         this._sessionGrid.Columns["Active"]!.MinimumWidth = 60;
 
-        // Adjust Session column to fill remaining space on form resize or column drag
         bool adjustingSessionWidth = false;
         void AdjustSessionColumnWidth()
         {
@@ -148,6 +181,18 @@ internal class MainForm : Form
             }
         };
 
+        this._sessionGrid.CellDoubleClick += (s, e) =>
+        {
+            if (e.RowIndex >= 0)
+            {
+                this.SelectedSessionId = this._sessionGrid.Rows[e.RowIndex].Tag as string;
+                this.LaunchSession();
+            }
+        };
+    }
+
+    private Panel BuildSearchPanel()
+    {
         var searchPanel = new Panel { Dock = DockStyle.Top, Height = 30, Padding = new Padding(5, 5, 5, 2) };
         var searchLabel = new Label { Text = "Search:", AutoSize = true, Dock = DockStyle.Left, TextAlign = ContentAlignment.MiddleLeft };
         var btnRefreshTop = new Button
@@ -169,27 +214,17 @@ internal class MainForm : Form
         };
         this._searchBox.TextChanged += (s, e) =>
         {
-            // Re-filter cached sessions without reloading from disk
             var snapshot = this._activeTracker.Refresh(this._cachedSessions);
             this._gridController.Populate(this._cachedSessions, snapshot, this._searchBox.Text);
         };
-        // Add Refresh and label first (Dock=Right/Left), then textbox fills remaining space
         searchPanel.Controls.Add(this._searchBox);
         searchPanel.Controls.Add(btnRefreshTop);
         searchPanel.Controls.Add(searchLabel);
+        return searchPanel;
+    }
 
-        this._sessionGrid.CellDoubleClick += (s, e) =>
-        {
-            if (e.RowIndex >= 0)
-            {
-                this.SelectedSessionId = this._sessionGrid.Rows[e.RowIndex].Tag as string;
-                this.LaunchSession();
-            }
-        };
-
-        this._gridController = new SessionGridController(this._sessionGrid, this._activeTracker);
-
-        // Right-click context menu with Edit option
+    private void BuildGridContextMenu()
+    {
         var gridContextMenu = new ContextMenuStrip();
         var editMenuItem = new ToolStripMenuItem("Edit");
         editMenuItem.Click += async (s, e) =>
@@ -230,7 +265,10 @@ internal class MainForm : Form
                 this._sessionGrid.CurrentCell = this._sessionGrid.Rows[e.RowIndex].Cells[0];
             }
         };
+    }
 
+    private FlowLayoutPanel BuildSessionButtonPanel()
+    {
         var sessionButtonPanel = new FlowLayoutPanel
         {
             Dock = DockStyle.Bottom,
@@ -240,6 +278,18 @@ internal class MainForm : Form
         };
 
         var btnOpen = new Button { Text = "Open ▾", Width = 80, Height = 28 };
+        var openMenu = BuildOpenMenu();
+        btnOpen.Click += (s, e) =>
+        {
+            openMenu.Show(btnOpen, new Point(0, btnOpen.Height));
+        };
+
+        sessionButtonPanel.Controls.Add(btnOpen);
+        return sessionButtonPanel;
+    }
+
+    private ContextMenuStrip BuildOpenMenu()
+    {
         var openMenu = new ContextMenuStrip();
 
         var menuOpenSession = new ToolStripMenuItem("Open Session");
@@ -473,49 +523,37 @@ internal class MainForm : Form
             }
         };
 
-        btnOpen.Click += (s, e) =>
-        {
-            openMenu.Show(btnOpen, new Point(0, btnOpen.Height));
-        };
+        return openMenu;
+    }
 
-        sessionButtonPanel.Controls.Add(btnOpen);
-
-        this._sessionsTab.Controls.Add(this._sessionGrid);
-        this._sessionsTab.Controls.Add(searchPanel);
-        this._sessionsTab.Controls.Add(sessionButtonPanel);
-
-        // ===== Settings Tab =====
-        this._settingsTab = new TabPage("Settings");
-
+    private void BuildSettingsTab()
+    {
         var settingsContainer = new Panel { Dock = DockStyle.Fill };
-
         var settingsTabs = new TabControl { Dock = DockStyle.Fill };
 
-        // --- Allowed Tools tab ---
+        // Allowed Tools
         var toolsTab = new TabPage("Allowed Tools");
         this._toolsList = new ListBox { Dock = DockStyle.Fill, IntegralHeight = false };
         foreach (var tool in Program._settings.AllowedTools)
         {
             this._toolsList.Items.Add(tool);
         }
-
         var toolsButtons = SettingsTabBuilder.CreateListButtons(this._toolsList, "Tool name:", "Add Tool", addBrowse: false);
         toolsTab.Controls.Add(this._toolsList);
         toolsTab.Controls.Add(toolsButtons);
 
-        // --- Allowed Directories tab ---
+        // Allowed Directories
         var dirsTab = new TabPage("Allowed Directories");
         this._dirsList = new ListBox { Dock = DockStyle.Fill, IntegralHeight = false };
         foreach (var dir in Program._settings.AllowedDirs)
         {
             this._dirsList.Items.Add(dir);
         }
-
         var dirsButtons = SettingsTabBuilder.CreateListButtons(this._dirsList, "Directory path:", "Add Directory", addBrowse: true);
         dirsTab.Controls.Add(this._dirsList);
         dirsTab.Controls.Add(dirsButtons);
 
-        // --- IDEs tab ---
+        // IDEs
         var idesTab = new TabPage("IDEs");
         this._idesList = new ListView
         {
@@ -533,7 +571,6 @@ internal class MainForm : Form
             item.SubItems.Add(ide.Path);
             this._idesList.Items.Add(item);
         }
-
         var ideButtons = SettingsTabBuilder.CreateIdeButtons(this._idesList);
         idesTab.Controls.Add(this._idesList);
         idesTab.Controls.Add(ideButtons);
@@ -542,7 +579,7 @@ internal class MainForm : Form
         settingsTabs.TabPages.Add(dirsTab);
         settingsTabs.TabPages.Add(idesTab);
 
-        // --- Default Work Dir ---
+        // Default Work Dir
         var workDirPanel = new Panel { Dock = DockStyle.Top, Height = 40, Padding = new Padding(8, 8, 8, 4) };
         var workDirLabel = new Label { Text = "Default Work Dir:", AutoSize = true, Location = new Point(8, 12) };
         this._workDirBox = new TextBox
@@ -569,7 +606,7 @@ internal class MainForm : Form
         };
         workDirPanel.Controls.AddRange([workDirLabel, this._workDirBox, workDirBrowse]);
 
-        // --- Bottom buttons ---
+        // Bottom buttons
         var settingsBottomPanel = new FlowLayoutPanel
         {
             Dock = DockStyle.Bottom,
@@ -605,10 +642,10 @@ internal class MainForm : Form
         settingsContainer.Controls.Add(settingsBottomPanel);
 
         this._settingsTab.Controls.Add(settingsContainer);
+    }
 
-        // ===== New Session Tab =====
-        this._newSessionTab = new TabPage("New Session");
-
+    private void BuildNewSessionTab()
+    {
         this._cwdListView = new ListView
         {
             Dock = DockStyle.Fill,
@@ -708,13 +745,10 @@ internal class MainForm : Form
 
         this._newSessionTab.Controls.Add(this._cwdListView);
         this._newSessionTab.Controls.Add(newSessionButtonPanel);
+    }
 
-        // ===== Add tabs to main control =====
-        this._mainTabs.TabPages.Add(this._newSessionTab);
-        this._mainTabs.TabPages.Add(this._sessionsTab);
-        this._mainTabs.TabPages.Add(this._settingsTab);
-
-        // ===== Update banner =====
+    private void SetupUpdateBanner()
+    {
         this._updateLabel = new LinkLabel
         {
             Dock = DockStyle.Bottom,
@@ -724,10 +758,10 @@ internal class MainForm : Form
             Padding = new Padding(0, 4, 0, 4)
         };
         this._updateLabel.LinkClicked += this.OnUpdateLabelClickedAsync;
+    }
 
-        this.Controls.Add(this._mainTabs);
-        this.Controls.Add(this._updateLabel);
-
+    private void SetupTimersAndEvents(int initialTab)
+    {
         if (initialTab >= 0 && initialTab < this._mainTabs.TabPages.Count)
         {
             this._mainTabs.SelectedIndex = initialTab;
