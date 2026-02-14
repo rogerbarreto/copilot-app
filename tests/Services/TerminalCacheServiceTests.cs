@@ -51,26 +51,28 @@ public sealed class TerminalCacheServiceTests : IDisposable
     }
 
     [Fact]
-    public void GetCachedTerminals_ReturnsAliveProcesses()
+    public void GetCachedTerminals_ReturnsAllCachedSessions()
     {
-        int currentPid = Environment.ProcessId;
-        TerminalCacheService.CacheTerminal(this._cacheFile, "alive-session", currentPid);
+        TerminalCacheService.CacheTerminal(this._cacheFile, "session-a", 1111);
+        TerminalCacheService.CacheTerminal(this._cacheFile, "session-b", 2222);
 
         var result = TerminalCacheService.GetCachedTerminals(this._cacheFile);
 
-        Assert.Contains("alive-session", result);
+        Assert.Contains("session-a", result);
+        Assert.Contains("session-b", result);
+        Assert.Equal(2, result.Count);
     }
 
     [Fact]
-    public void GetCachedTerminals_RemovesDeadEntries()
+    public void GetCachedTerminals_DoesNotModifyCacheFile()
     {
-        TerminalCacheService.CacheTerminal(this._cacheFile, "dead-session", 99999);
+        TerminalCacheService.CacheTerminal(this._cacheFile, "session-1", 99999);
+        var beforeJson = File.ReadAllText(this._cacheFile);
 
-        var result = TerminalCacheService.GetCachedTerminals(this._cacheFile);
+        TerminalCacheService.GetCachedTerminals(this._cacheFile);
 
-        Assert.DoesNotContain("dead-session", result);
-        var json = File.ReadAllText(this._cacheFile);
-        Assert.DoesNotContain("dead-session", json);
+        var afterJson = File.ReadAllText(this._cacheFile);
+        Assert.Equal(beforeJson, afterJson);
     }
 
     [Fact]

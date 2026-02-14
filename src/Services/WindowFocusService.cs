@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
@@ -152,6 +153,83 @@ internal static partial class WindowFocusService
         }, IntPtr.Zero);
 
         return resultPid;
+    }
+
+    /// <summary>
+    /// Scans all visible windows for titles matching tracked session patterns.
+    /// Returns results grouped by session ID with display label and window title.
+    /// Matches: "Terminal - {id}", "Terminal #N - {id}", "Copilot CLI - {id}",
+    /// and optionally matches window titles equal to known session summaries.
+    /// </summary>
+    /// <param name="sessionSummaries">Optional mapping of session summary to session ID for title matching.</param>
+    /// <returns>A dictionary mapping session IDs to lists of (label, windowTitle) tuples.</returns>
+    internal static Dictionary<string, List<(string Label, string Title)>> FindTrackedWindows(
+        Dictionary<string, string>? sessionSummaries = null)
+    {
+        var results = new Dictionary<string, List<(string, string)>>(StringComparer.OrdinalIgnoreCase);
+
+        EnumWindows((hwnd, _) =>
+        {
+            if (!IsWindowVisible(hwnd))
+            {
+                return true;
+            }
+
+            int len = GetWindowTextLength(hwnd);
+            if (len == 0)
+            {
+                return true;
+            }
+
+            var sb = new System.Text.StringBuilder(len + 1);
+            GetWindowText(hwnd, sb, sb.Capacity);
+            var title = sb.ToString();
+
+            string? sessionId = null;
+            string? label = null;
+
+            // Match "Copilot CLI - {sessionId}"
+            if (title.StartsWith("Copilot CLI - ", StringComparison.OrdinalIgnoreCase))
+            {
+                sessionId = title.Substring("Copilot CLI - ".Length);
+                label = "Copilot CLI";
+            }
+            // Match "Terminal - {sessionId}"
+            else if (title.StartsWith("Terminal - ", StringComparison.OrdinalIgnoreCase))
+            {
+                sessionId = title.Substring("Terminal - ".Length);
+                label = "Terminal";
+            }
+            // Match "Terminal #N - {sessionId}"
+            else if (title.StartsWith("Terminal #", StringComparison.OrdinalIgnoreCase))
+            {
+                var dashIdx = title.IndexOf(" - ", "Terminal #".Length, StringComparison.Ordinal);
+                if (dashIdx > 0)
+                {
+                    sessionId = title.Substring(dashIdx + 3);
+                    label = title.Substring(0, dashIdx);
+                }
+            }
+            // Match window title equal to a known session summary (Copilot CLI sets title to session name)
+            else if (sessionSummaries != null && sessionSummaries.TryGetValue(title, out var matchedId))
+            {
+                sessionId = matchedId;
+                label = "Copilot CLI";
+            }
+
+            if (sessionId != null && sessionId.Length > 0 && label != null)
+            {
+                if (!results.ContainsKey(sessionId))
+                {
+                    results[sessionId] = new List<(string, string)>();
+                }
+                results[sessionId].Add((label, title));
+            }
+
+            return true;
+        }, IntPtr.Zero);
+
+        return results;
     }
 
     /// <summary>

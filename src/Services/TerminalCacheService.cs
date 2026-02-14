@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 
@@ -15,7 +14,7 @@ internal static class TerminalCacheService
     /// </summary>
     /// <param name="cacheFile">Path to the terminal cache JSON file.</param>
     /// <param name="sessionId">The session ID to cache.</param>
-    /// <param name="copilotPid">The process ID of the copilot terminal.</param>
+    /// <param name="copilotPid">The process ID (informational only; liveness is checked by window title).</param>
     internal static void CacheTerminal(string cacheFile, string sessionId, int copilotPid)
     {
         try
@@ -39,60 +38,31 @@ internal static class TerminalCacheService
     }
 
     /// <summary>
-    /// Returns session IDs whose cached terminal process is still running.
-    /// Dead entries are removed and the cleaned cache is written back.
+    /// Returns all cached terminal session IDs.
+    /// Unlike GetActiveSessions, liveness is NOT checked here — callers should verify
+    /// by window title matching since wt.exe launcher PIDs exit immediately.
     /// </summary>
     /// <param name="cacheFile">Path to the terminal cache JSON file.</param>
-    /// <returns>A set of session IDs with still-running terminal processes.</returns>
+    /// <returns>A set of cached session IDs.</returns>
     internal static HashSet<string> GetCachedTerminals(string cacheFile)
     {
-        var alive = new HashSet<string>();
+        var ids = new HashSet<string>();
         try
         {
             if (!File.Exists(cacheFile))
             {
-                return alive;
+                return ids;
             }
 
             var cache = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(File.ReadAllText(cacheFile)) ?? [];
-            var dead = new List<string>();
-
             foreach (var entry in cache)
             {
-                bool isAlive = false;
-                try
-                {
-                    if (entry.Value.TryGetProperty("copilotPid", out var pidElement))
-                    {
-                        int pid = pidElement.GetInt32();
-                        Process.GetProcessById(pid);
-                        isAlive = true;
-                    }
-                }
-                catch { }
-
-                if (isAlive)
-                {
-                    alive.Add(entry.Key);
-                }
-                else
-                {
-                    dead.Add(entry.Key);
-                }
-            }
-
-            if (dead.Count > 0)
-            {
-                foreach (var key in dead)
-                {
-                    cache.Remove(key);
-                }
-                File.WriteAllText(cacheFile, JsonSerializer.Serialize(cache));
+                ids.Add(entry.Key);
             }
         }
         catch { }
 
-        return alive;
+        return ids;
     }
 
     /// <summary>

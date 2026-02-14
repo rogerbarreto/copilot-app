@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
 using CopilotApp.Forms;
@@ -18,6 +19,9 @@ using CopilotApp.Services;
 /// </summary>
 internal class Program
 {
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern bool SetWindowText(IntPtr hWnd, string lpString);
+
     private const string UpdaterMutexName = "Global\\CopilotJumpListUpdater";
     private const string UpdateLockName = "Global\\CopilotJumpListUpdateLock";
 
@@ -307,10 +311,15 @@ internal class Program
 
         var settingsArgs = _settings.BuildCopilotArgs(copilotArgs.ToArray());
 
+        // Set a trackable title for the console window
+        var titlePrefix = resumeSessionId != null
+            ? $"Copilot CLI - {resumeSessionId}"
+            : "Copilot CLI";
+
         var psi = new ProcessStartInfo
         {
             FileName = "cmd.exe",
-            Arguments = $"/c \"\"{CopilotExePath}\" {settingsArgs}\"",
+            Arguments = $"/c \"title {titlePrefix} && \"{CopilotExePath}\" {settingsArgs}\"",
             WorkingDirectory = workDir,
             UseShellExecute = true
         };
@@ -340,6 +349,20 @@ internal class Program
                 PidRegistryService.UpdatePidSessionId(myPid, sessionId, PidRegistryFile, copilotPid: cmdPid);
                 TerminalCacheService.CacheTerminal(TerminalCacheFile, sessionId, cmdPid);
                 LogService.Log($"Mapped PID {myPid} to session {sessionId}, cmd PID {cmdPid}", s_logFile);
+
+                // For new sessions, update the console window title now that we know the session ID
+                if (resumeSessionId == null && s_copilotProcess != null)
+                {
+                    try
+                    {
+                        var hwnd = s_copilotProcess.MainWindowHandle;
+                        if (hwnd != IntPtr.Zero)
+                        {
+                            SetWindowText(hwnd, $"Copilot CLI - {sessionId}");
+                        }
+                    }
+                    catch { }
+                }
             }
 
             LogService.Log("Updating jump list...", s_logFile);
