@@ -27,6 +27,7 @@ internal class MainForm : Form
     private TextBox _searchBox = null!;
     private DataGridView _sessionGrid = null!;
     private SessionGridController _gridController = null!;
+    private Label _loadingOverlay = null!;
     private List<NamedSession> _cachedSessions = new();
     private readonly ActiveStatusTracker _activeTracker = new();
     private Timer? _activeStatusTimer;
@@ -109,11 +110,21 @@ internal class MainForm : Form
         var searchPanel = this.BuildSearchPanel();
         this._gridController = new SessionGridController(this._sessionGrid, this._activeTracker);
         this.BuildGridContextMenu();
-        var buttonPanel = this.BuildSessionButtonPanel();
 
+        this._loadingOverlay = new Label
+        {
+            Text = "Loading sessions...",
+            Dock = DockStyle.Fill,
+            TextAlign = ContentAlignment.MiddleCenter,
+            Font = new Font(SystemFonts.DefaultFont.FontFamily, 14f, FontStyle.Regular),
+            ForeColor = SystemColors.GrayText,
+            BackColor = SystemColors.Window
+        };
+
+        this._sessionsTab.Controls.Add(this._loadingOverlay);
+        this._loadingOverlay.BringToFront();
         this._sessionsTab.Controls.Add(this._sessionGrid);
         this._sessionsTab.Controls.Add(searchPanel);
-        this._sessionsTab.Controls.Add(buttonPanel);
     }
 
     private void InitializeSessionGrid()
@@ -226,7 +237,20 @@ internal class MainForm : Form
     private void BuildGridContextMenu()
     {
         var gridContextMenu = new ContextMenuStrip();
-        var editMenuItem = new ToolStripMenuItem("Edit");
+
+        var menuOpenSession = new ToolStripMenuItem("Open Session");
+        menuOpenSession.Click += (s, e) =>
+        {
+            var sid = this._gridController.GetSelectedSessionId();
+            if (sid != null)
+            {
+                this.SelectedSessionId = sid;
+                this.LaunchSession();
+            }
+        };
+        gridContextMenu.Items.Add(menuOpenSession);
+
+        var editMenuItem = new ToolStripMenuItem("Edit Session");
         editMenuItem.Click += async (s, e) =>
         {
             var sid = this._gridController.GetSelectedSessionId();
@@ -254,55 +278,8 @@ internal class MainForm : Form
             }
         };
         gridContextMenu.Items.Add(editMenuItem);
-        this._sessionGrid.ContextMenuStrip = gridContextMenu;
 
-        this._sessionGrid.CellMouseDown += (s, e) =>
-        {
-            if (e.Button == MouseButtons.Right && e.RowIndex >= 0)
-            {
-                this._sessionGrid.ClearSelection();
-                this._sessionGrid.Rows[e.RowIndex].Selected = true;
-                this._sessionGrid.CurrentCell = this._sessionGrid.Rows[e.RowIndex].Cells[0];
-            }
-        };
-    }
-
-    private FlowLayoutPanel BuildSessionButtonPanel()
-    {
-        var sessionButtonPanel = new FlowLayoutPanel
-        {
-            Dock = DockStyle.Bottom,
-            Height = 45,
-            FlowDirection = FlowDirection.RightToLeft,
-            Padding = new Padding(5)
-        };
-
-        var btnOpen = new Button { Text = "Open ▾", Width = 80, Height = 28 };
-        var openMenu = this.BuildOpenMenu();
-        btnOpen.Click += (s, e) =>
-        {
-            openMenu.Show(btnOpen, new Point(0, btnOpen.Height));
-        };
-
-        sessionButtonPanel.Controls.Add(btnOpen);
-        return sessionButtonPanel;
-    }
-
-    private ContextMenuStrip BuildOpenMenu()
-    {
-        var openMenu = new ContextMenuStrip();
-
-        var menuOpenSession = new ToolStripMenuItem("Open Session");
-        menuOpenSession.Click += (s, e) =>
-        {
-            var sid = this._gridController.GetSelectedSessionId();
-            if (sid != null)
-            {
-                this.SelectedSessionId = sid;
-                this.LaunchSession();
-            }
-        };
-        openMenu.Items.Add(menuOpenSession);
+        gridContextMenu.Items.Add(new ToolStripSeparator());
 
         var menuOpenNewSession = new ToolStripMenuItem("Open as New Copilot Session");
         menuOpenNewSession.Click += (s, e) =>
@@ -331,7 +308,7 @@ internal class MainForm : Form
                 }
             }
         };
-        openMenu.Items.Add(menuOpenNewSession);
+        gridContextMenu.Items.Add(menuOpenNewSession);
 
         var menuOpenNewSessionWorkspace = new ToolStripMenuItem("Open as New Copilot Session Workspace");
         menuOpenNewSessionWorkspace.Click += (s, e) =>
@@ -368,9 +345,9 @@ internal class MainForm : Form
                 }
             }
         };
-        openMenu.Items.Add(menuOpenNewSessionWorkspace);
+        gridContextMenu.Items.Add(menuOpenNewSessionWorkspace);
 
-        openMenu.Items.Add(new ToolStripSeparator());
+        gridContextMenu.Items.Add(new ToolStripSeparator());
 
         var menuOpenTerminal = new ToolStripMenuItem("Open Terminal");
         menuOpenTerminal.Click += (s, e) =>
@@ -394,12 +371,12 @@ internal class MainForm : Form
                 this.RefreshActiveStatusAsync();
             }
         };
-        openMenu.Items.Add(menuOpenTerminal);
+        gridContextMenu.Items.Add(menuOpenTerminal);
 
         var ideRepoMenuItems = new List<ToolStripMenuItem>();
         if (Program._settings.Ides.Count > 0)
         {
-            openMenu.Items.Add(new ToolStripSeparator());
+            gridContextMenu.Items.Add(new ToolStripSeparator());
 
             foreach (var ide in Program._settings.Ides)
             {
@@ -427,7 +404,7 @@ internal class MainForm : Form
                         this.RefreshActiveStatusAsync();
                     }
                 };
-                openMenu.Items.Add(menuIdeCwd);
+                gridContextMenu.Items.Add(menuIdeCwd);
 
                 var menuIdeRepo = new ToolStripMenuItem($"Open in {ide.Description} (Repo Root)");
                 menuIdeRepo.Click += (s, e) =>
@@ -457,12 +434,12 @@ internal class MainForm : Form
                         this.RefreshActiveStatusAsync();
                     }
                 };
-                openMenu.Items.Add(menuIdeRepo);
+                gridContextMenu.Items.Add(menuIdeRepo);
                 ideRepoMenuItems.Add(menuIdeRepo);
             }
         }
 
-        openMenu.Items.Add(new ToolStripSeparator());
+        gridContextMenu.Items.Add(new ToolStripSeparator());
 
         var menuOpenEdge = new ToolStripMenuItem("Open in Edge");
         menuOpenEdge.Click += async (s, e) =>
@@ -501,9 +478,9 @@ internal class MainForm : Form
             await workspace.OpenAsync().ConfigureAwait(true);
             this.RefreshActiveStatusAsync();
         };
-        openMenu.Items.Add(menuOpenEdge);
+        gridContextMenu.Items.Add(menuOpenEdge);
 
-        openMenu.Opening += (s, e) =>
+        gridContextMenu.Opening += (s, e) =>
         {
             bool isGit = false;
             var sessionId = this._gridController.GetSelectedSessionId();
@@ -523,7 +500,17 @@ internal class MainForm : Form
             }
         };
 
-        return openMenu;
+        this._sessionGrid.ContextMenuStrip = gridContextMenu;
+
+        this._sessionGrid.CellMouseDown += (s, e) =>
+        {
+            if (e.Button == MouseButtons.Right && e.RowIndex >= 0)
+            {
+                this._sessionGrid.ClearSelection();
+                this._sessionGrid.Rows[e.RowIndex].Selected = true;
+                this._sessionGrid.CurrentCell = this._sessionGrid.Rows[e.RowIndex].Cells[0];
+            }
+        };
     }
 
     private void BuildSettingsTab()
@@ -908,6 +895,8 @@ internal class MainForm : Form
         this._cachedSessions = sessions;
         var snapshot = this._activeTracker.Refresh(this._cachedSessions);
         this._gridController.Populate(this._cachedSessions, snapshot, this._searchBox.Text);
+
+        this._loadingOverlay.Visible = false;
 
         this.RefreshNewSessionList();
     }

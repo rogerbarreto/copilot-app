@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.6.1] - 2026-02-14
+
+### Changed
+
+- **Right-click context menu** — replaced the bottom "Open ▾" button with a right-click context menu on session rows. All actions (Open Session, Edit Session, Open Terminal, IDE, Edge) are now accessible via right-click.
+- **Loading overlay** — the Existing Sessions tab shows a "Loading sessions..." indicator while session data is being fetched on startup.
+
+### Fixed
+
+- **Edge browser launch** — resolved Edge executable path from Windows registry (`App Paths`) instead of relying on PATH, with fallback to common install locations and `microsoft-edge:` protocol handler.
+
 ## [0.6.0] - 2026-02-14
 
 ### Added
@@ -117,6 +128,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - MIT license.
 - GitHub Actions release workflow with `.zip` artifact publishing.
 
+[0.6.1]: https://github.com/rogerbarreto/copilot-app/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/rogerbarreto/copilot-app/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/rogerbarreto/copilot-app/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/rogerbarreto/copilot-app/compare/v0.3.0...v0.4.0

@@ -46,25 +46,22 @@ Other session browser features:
 - **Terminal persistence** — active terminals survive app restarts
 - **Auto-refresh** — the list updates when new sessions appear or names change externally
 - **Auto-cleanup** — empty sessions with no activity are automatically removed
-- **Edit session** — right-click any session to rename it or change its working directory
-
-<p align="center">
-  <img src="images/context-menu-edit.png" alt="Right-click Edit context menu" width="250">
-</p>
+- **Loading indicator** — shows "Loading sessions..." while session data is being fetched
 
 ---
 
-### 🔘 Single Open Button
+### 📋 Right-Click Context Menu
 
-All session actions are consolidated into a single **Open ▾** dropdown:
+Right-click any session row to access all actions in a single context menu:
 
 <p align="center">
-  <img src="images/open-dropdown-menu.png" alt="Open dropdown with all session actions" width="300">
+  <img src="images/context-menu-edit.png" alt="Right-click context menu with all session actions" width="300">
 </p>
 
 | Action | Description |
 |--------|-------------|
 | **Open Session** | Resume the session in its original working directory |
+| **Edit Session** | Rename the session or change its working directory |
 | **Open as New Copilot Session** | Start a fresh Copilot CLI session in the same directory |
 | **Open as New Copilot Session Workspace** | Create a Git worktree workspace (Git repos only) |
 | **Open Terminal** | Launch a standalone terminal in the session's directory |
