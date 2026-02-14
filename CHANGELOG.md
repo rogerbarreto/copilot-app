@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.7.1] - 2026-02-14
+
+### Fixed
+
+- **IDE focus always went to Visual Studio** — IDE windows are now tracked by cached window handle (HWND) instead of title substring matching, fixing the collision where "Visual Studio" matched both VS and VS Code.
+- **IDE tracking lost on app restart** — IDE window handles are now persisted in `~/.copilot/ide-cache.json` and re-validated on startup, so IDE instances survive app restarts.
+- **Duplicate IDE instances** — clicking "Open in IDE" for a session that already has that IDE open now focuses the existing window instead of launching a new instance.
+
 ## [0.7.0] - 2026-02-14
 
 ### Changed

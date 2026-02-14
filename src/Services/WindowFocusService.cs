@@ -90,11 +90,42 @@ internal static partial class WindowFocusService
     }
 
     /// <summary>
-    /// Finds a visible window whose title contains the specified text and brings it to the foreground.
+    /// Finds the first visible window handle owned by the specified process.
     /// </summary>
-    /// <param name="titleSubstring">Text to search for in window titles (case-insensitive).</param>
-    /// <returns><c>true</c> if a matching window was found and focused; otherwise <c>false</c>.</returns>
-    internal static bool TryFocusWindowByTitle(string titleSubstring)
+    /// <param name="processId">The process ID to search for.</param>
+    /// <returns>The window handle if found; otherwise <see cref="IntPtr.Zero"/>.</returns>
+    internal static IntPtr FindWindowHandleByPid(int processId)
+    {
+        uint targetPid = (uint)processId;
+        IntPtr found = IntPtr.Zero;
+
+        EnumWindows((hwnd, _) =>
+        {
+            if (!IsWindowVisible(hwnd))
+            {
+                return true;
+            }
+
+            GetWindowThreadProcessId(hwnd, out uint windowPid);
+            if (windowPid == targetPid)
+            {
+                found = hwnd;
+                return false;
+            }
+
+            return true;
+        }, IntPtr.Zero);
+
+        return found;
+    }
+
+    /// <summary>
+    /// Finds a visible window handle whose title contains all specified substrings.
+    /// </summary>
+    /// <param name="titleSubstring">Primary text to search for in window titles (case-insensitive).</param>
+    /// <param name="secondarySubstring">Optional secondary text that must also be present (case-insensitive).</param>
+    /// <returns>The window handle if found; otherwise <see cref="IntPtr.Zero"/>.</returns>
+    internal static IntPtr FindWindowHandleByTitle(string titleSubstring, string? secondarySubstring)
     {
         IntPtr found = IntPtr.Zero;
 
@@ -113,7 +144,57 @@ internal static partial class WindowFocusService
 
             var sb = new System.Text.StringBuilder(len + 1);
             GetWindowText(hwnd, sb, sb.Capacity);
-            if (sb.ToString().Contains(titleSubstring, StringComparison.OrdinalIgnoreCase))
+            var title = sb.ToString();
+            if (title.Contains(titleSubstring, StringComparison.OrdinalIgnoreCase)
+                && (secondarySubstring == null || title.Contains(secondarySubstring, StringComparison.OrdinalIgnoreCase)))
+            {
+                found = hwnd;
+                return false;
+            }
+            return true;
+        }, IntPtr.Zero);
+
+        return found;
+    }
+
+    /// <summary>
+    /// Finds a visible window whose title contains the specified text and brings it to the foreground.
+    /// </summary>
+    /// <param name="titleSubstring">Text to search for in window titles (case-insensitive).</param>
+    /// <returns><c>true</c> if a matching window was found and focused; otherwise <c>false</c>.</returns>
+    internal static bool TryFocusWindowByTitle(string titleSubstring)
+    {
+        return TryFocusWindowByTitle(titleSubstring, null);
+    }
+
+    /// <summary>
+    /// Finds a visible window whose title contains all specified substrings and brings it to the foreground.
+    /// </summary>
+    /// <param name="titleSubstring">Primary text to search for in window titles (case-insensitive).</param>
+    /// <param name="secondarySubstring">Optional secondary text that must also be present (case-insensitive).</param>
+    /// <returns><c>true</c> if a matching window was found and focused; otherwise <c>false</c>.</returns>
+    internal static bool TryFocusWindowByTitle(string titleSubstring, string? secondarySubstring)
+    {
+        IntPtr found = IntPtr.Zero;
+
+        EnumWindows((hwnd, _) =>
+        {
+            if (!IsWindowVisible(hwnd))
+            {
+                return true;
+            }
+
+            int len = GetWindowTextLength(hwnd);
+            if (len == 0)
+            {
+                return true;
+            }
+
+            var sb = new System.Text.StringBuilder(len + 1);
+            GetWindowText(hwnd, sb, sb.Capacity);
+            var title = sb.ToString();
+            if (title.Contains(titleSubstring, StringComparison.OrdinalIgnoreCase)
+                && (secondarySubstring == null || title.Contains(secondarySubstring, StringComparison.OrdinalIgnoreCase)))
             {
                 found = hwnd;
                 return false;
@@ -130,6 +211,17 @@ internal static partial class WindowFocusService
     /// <param name="titleSubstring">Text to search for in window titles (case-insensitive).</param>
     /// <returns>The process ID if found; otherwise <c>-1</c>.</returns>
     internal static int FindProcessIdByWindowTitle(string titleSubstring)
+    {
+        return FindProcessIdByWindowTitle(titleSubstring, null);
+    }
+
+    /// <summary>
+    /// Finds a process ID that owns a visible window whose title contains all specified substrings.
+    /// </summary>
+    /// <param name="titleSubstring">Primary text to search for in window titles (case-insensitive).</param>
+    /// <param name="secondarySubstring">Optional secondary text that must also be present (case-insensitive).</param>
+    /// <returns>The process ID if found; otherwise <c>-1</c>.</returns>
+    internal static int FindProcessIdByWindowTitle(string titleSubstring, string? secondarySubstring)
     {
         int resultPid = -1;
 
@@ -148,7 +240,9 @@ internal static partial class WindowFocusService
 
             var sb = new System.Text.StringBuilder(len + 1);
             GetWindowText(hwnd, sb, sb.Capacity);
-            if (sb.ToString().Contains(titleSubstring, StringComparison.OrdinalIgnoreCase))
+            var title = sb.ToString();
+            if (title.Contains(titleSubstring, StringComparison.OrdinalIgnoreCase)
+                && (secondarySubstring == null || title.Contains(secondarySubstring, StringComparison.OrdinalIgnoreCase)))
             {
                 GetWindowThreadProcessId(hwnd, out uint pid);
                 resultPid = (int)pid;
@@ -324,6 +418,14 @@ internal static partial class WindowFocusService
         }
 
         return FocusWindow(hwnd);
+    }
+
+    /// <summary>
+    /// Checks if a window handle is still valid and visible.
+    /// </summary>
+    internal static bool IsWindowAlive(IntPtr hwnd)
+    {
+        return hwnd != IntPtr.Zero && IsWindow(hwnd) && IsWindowVisible(hwnd);
     }
 
     /// <summary>

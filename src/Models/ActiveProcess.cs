@@ -1,4 +1,6 @@
-﻿namespace CopilotBooster.Models;
+﻿using System;
+
+namespace CopilotBooster.Models;
 
 /// <summary>
 /// Represents a tracked process (terminal or IDE) associated with a session.
@@ -19,6 +21,11 @@ internal class ActiveProcess
     /// Gets the folder path used to launch the IDE (for re-matching after launcher exits).
     /// </summary>
     public string? FolderPath { get; }
+
+    /// <summary>
+    /// Gets or sets the cached window handle for direct focus.
+    /// </summary>
+    public IntPtr Hwnd { get; set; }
 
     public ActiveProcess(string name, int pid, string? folderPath = null)
     {

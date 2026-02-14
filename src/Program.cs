@@ -33,6 +33,7 @@ internal class Program
     internal static readonly string SessionStateDir = Path.Combine(s_copilotDir, "session-state");
     internal static readonly string PidRegistryFile = Path.Combine(s_copilotDir, "active-pids.json");
     internal static readonly string TerminalCacheFile = Path.Combine(s_copilotDir, "terminal-cache.json");
+    internal static readonly string IdeCacheFile = Path.Combine(s_copilotDir, "ide-cache.json");
     private static readonly string s_signalFile = Path.Combine(s_copilotDir, "ui-signal.txt");
     private static readonly string s_lastUpdateFile = Path.Combine(s_copilotDir, "jumplist-lastupdate.txt");
     private static readonly string s_logFile = Path.Combine(s_copilotDir, "launcher.log");

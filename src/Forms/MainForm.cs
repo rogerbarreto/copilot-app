@@ -408,6 +408,12 @@ internal class MainForm : Form
                         return;
                     }
 
+                    // Focus existing IDE instance if already open for this session
+                    if (this._activeTracker.TryFocusExistingIde(sid, capturedIde.Description))
+                    {
+                        return;
+                    }
+
                     var session = this._cachedSessions.Find(x => x.Id == sid);
                     if (session == null || string.IsNullOrEmpty(session.Cwd))
                     {
@@ -428,6 +434,12 @@ internal class MainForm : Form
                 {
                     var sid = this._gridController.GetSelectedSessionId();
                     if (sid == null)
+                    {
+                        return;
+                    }
+
+                    // Focus existing IDE instance if already open for this session
+                    if (this._activeTracker.TryFocusExistingIde(sid, capturedIde.Description))
                     {
                         return;
                     }

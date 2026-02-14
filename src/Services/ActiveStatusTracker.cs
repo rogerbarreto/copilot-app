@@ -27,6 +27,7 @@ internal class ActiveStatusTracker
     private readonly Dictionary<string, List<ActiveProcess>> _trackedProcesses = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, EdgeWorkspaceService> _edgeWorkspaces = new(StringComparer.OrdinalIgnoreCase);
     private bool _edgeInitialScanDone;
+    private bool _ideInitialLoadDone;
 
     private static readonly HashSet<string> s_ignoredSummaries = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -121,15 +122,26 @@ internal class ActiveStatusTracker
         {
             foreach (var proc in procs)
             {
-                try
+                // Prefer HWND-based liveness check (works for cached IDEs with PID=0)
+                if (proc.Hwnd != IntPtr.Zero)
                 {
-                    var p = Process.GetProcessById(proc.Pid);
-                    if (!p.HasExited)
+                    if (WindowFocusService.IsWindowAlive(proc.Hwnd))
                     {
                         parts.Add(proc.Name);
                     }
                 }
-                catch { }
+                else
+                {
+                    try
+                    {
+                        var p = Process.GetProcessById(proc.Pid);
+                        if (!p.HasExited)
+                        {
+                            parts.Add(proc.Name);
+                        }
+                    }
+                    catch { }
+                }
             }
         }
 
@@ -180,28 +192,25 @@ internal class ActiveStatusTracker
         {
             foreach (var proc in procs)
             {
-                try
+                // Prefer HWND-based focus (avoids VS/VS Code title collision)
+                if (proc.Hwnd != IntPtr.Zero && WindowFocusService.IsWindowAlive(proc.Hwnd))
                 {
-                    var p = Process.GetProcessById(proc.Pid);
-                    if (!p.HasExited)
-                    {
-                        var capturedProc = proc;
-                        focusTargets.Add((proc.Name, () =>
-                        {
-                            if (capturedProc.FolderPath != null)
-                            {
-                                var folderName = Path.GetFileName(capturedProc.FolderPath.TrimEnd('\\'));
-                                WindowFocusService.TryFocusWindowByTitle(folderName);
-                            }
-                            else
-                            {
-                                WindowFocusService.TryFocusProcessWindow(capturedProc.Pid);
-                            }
-                        }
-                        ));
-                    }
+                    var capturedHwnd = proc.Hwnd;
+                    focusTargets.Add((proc.Name, () => WindowFocusService.TryFocusWindowHandle(capturedHwnd)));
                 }
-                catch { }
+                else if (proc.Pid > 0)
+                {
+                    try
+                    {
+                        var p = Process.GetProcessById(proc.Pid);
+                        if (!p.HasExited)
+                        {
+                            var capturedPid = proc.Pid;
+                            focusTargets.Add((proc.Name, () => WindowFocusService.TryFocusProcessWindow(capturedPid)));
+                        }
+                    }
+                    catch { }
+                }
             }
         }
 
@@ -254,37 +263,76 @@ internal class ActiveStatusTracker
         var openTerminalIds = new HashSet<string>(this._activeTrackedWindows.Keys, StringComparer.OrdinalIgnoreCase);
         this.SyncTerminalCache(openTerminalIds);
 
-        // Clean up dead tracked processes (IDEs only — terminals use scan-based detection)
+        // Load cached IDE entries on first refresh (restores IDE tracking across app restarts)
+        if (!this._ideInitialLoadDone)
+        {
+            this._ideInitialLoadDone = true;
+            var cached = IdeCacheService.Load(Program.IdeCacheFile);
+            foreach (var kvp in cached)
+            {
+                if (!this._trackedProcesses.ContainsKey(kvp.Key))
+                {
+                    this._trackedProcesses[kvp.Key] = kvp.Value;
+                }
+            }
+        }
+
+        // Clean up dead tracked processes and capture HWNDs for those that don't have one yet
         foreach (var kvp in this._trackedProcesses)
         {
             for (int i = kvp.Value.Count - 1; i >= 0; i--)
             {
                 var proc = kvp.Value[i];
 
-                // IDE processes — try to re-match by window title for launcher shims (e.g. VSCode)
+                // If we have a cached HWND, check if it's still alive
+                if (proc.Hwnd != IntPtr.Zero)
+                {
+                    if (!WindowFocusService.IsWindowAlive(proc.Hwnd))
+                    {
+                        kvp.Value.RemoveAt(i);
+                    }
+
+                    continue;
+                }
+
+                // No HWND yet — try to capture one from the PID
                 bool alive;
                 try { alive = !Process.GetProcessById(proc.Pid).HasExited; }
                 catch { alive = false; }
 
-                if (!alive && proc.FolderPath != null)
+                if (alive)
                 {
-                    var folderName = Path.GetFileName(proc.FolderPath.TrimEnd('\\'));
-                    var matchPid = WindowFocusService.FindProcessIdByWindowTitle(folderName);
-                    if (matchPid > 0)
+                    // Try to find the window handle by PID
+                    var hwnd = WindowFocusService.FindWindowHandleByPid(proc.Pid);
+                    if (hwnd != IntPtr.Zero)
                     {
-                        proc.Pid = matchPid;
+                        proc.Hwnd = hwnd;
+                    }
+                }
+                else if (proc.FolderPath != null)
+                {
+                    // Launcher exited — try to find the real IDE window by title
+                    var folderName = Path.GetFileName(proc.FolderPath.TrimEnd('\\'));
+                    var hwnd = WindowFocusService.FindWindowHandleByTitle(folderName, proc.Name);
+                    if (hwnd != IntPtr.Zero)
+                    {
+                        proc.Hwnd = hwnd;
+                        proc.Pid = 0;
                     }
                     else
                     {
                         kvp.Value.RemoveAt(i);
                     }
                 }
-                else if (!alive)
+                else
                 {
                     kvp.Value.RemoveAt(i);
                 }
             }
         }
+
+        // Persist IDE cache so tracking survives app restarts
+        IdeCacheService.Save(Program.IdeCacheFile, this._trackedProcesses);
 
         // Clean up closed Edge workspaces
         var closedEdge = new List<string>();
@@ -334,6 +382,47 @@ internal class ActiveStatusTracker
             this._trackedProcesses[sessionId] = new List<ActiveProcess>();
         }
         this._trackedProcesses[sessionId].Add(process);
+    }
+
+    /// <summary>
+    /// Checks if an IDE with the given name is already tracked for the session.
+    /// If found and still alive, focuses it and returns true (skip launching a new instance).
+    /// </summary>
+    internal bool TryFocusExistingIde(string sessionId, string ideName)
+    {
+        if (!this._trackedProcesses.TryGetValue(sessionId, out var procs))
+        {
+            return false;
+        }
+
+        foreach (var proc in procs)
+        {
+            if (!string.Equals(proc.Name, ideName, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (proc.Hwnd != IntPtr.Zero && WindowFocusService.IsWindowAlive(proc.Hwnd))
+            {
+                WindowFocusService.TryFocusWindowHandle(proc.Hwnd);
+                return true;
+            }
+
+            if (proc.Pid > 0)
+            {
+                try
+                {
+                    if (!Process.GetProcessById(proc.Pid).HasExited)
+                    {
+                        WindowFocusService.TryFocusProcessWindow(proc.Pid);
+                        return true;
+                    }
+                }
+                catch { }
+            }
+        }
+
+        return false;
     }
 
     /// <summary>

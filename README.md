@@ -61,10 +61,14 @@ The **Active** column tracks running contexts across multiple environments:
 |---------|-------------------|
 | **Terminal** | Windows launched via "Open Terminal" are tracked by PID and cached across restarts |
 | **Copilot CLI** | Open terminal windows are scanned by matching session summaries in window titles |
-| **IDE** | IDEs launched via the Open menu are tracked by process ID |
+| **IDE** | IDEs launched via the Open menu are tracked by window handle and cached across restarts |
 | **Edge** | Browser workspaces are tracked via UI Automation anchor-tab detection |
 
-Each active context is a **clickable link** — click to focus the corresponding window instantly.
+Each active context is a **clickable link** — click to focus the corresponding window instantly. Re-opening an IDE that's already tracked for a session will focus the existing window instead of launching a new instance.
+
+<p align="center">
+  <img src="images/Focus-Feature-Per-Session.gif" alt="Click-to-focus across Terminal, IDE, and Edge per session" width="700">
+</p>
 
 Other session browser features:
 - **Search** — filter sessions by title, folder, or metadata as you type
