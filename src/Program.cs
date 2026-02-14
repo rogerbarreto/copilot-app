@@ -24,6 +24,7 @@ internal class Program
 
     private const string UpdaterMutexName = "Global\\CopilotJumpListUpdater";
     private const string UpdateLockName = "Global\\CopilotJumpListUpdateLock";
+    private const string MainFormMutexName = "Local\\CopilotAppMainForm";
 
     private static readonly string s_copilotDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".copilot");
     /// <summary>
@@ -124,12 +125,9 @@ internal class Program
 
             int desiredTab = showSettings ? 2 : 1;
 
-            // Check if another CopilotApp MainForm is already open
-            var existing = Process.GetProcessesByName("CopilotApp")
-                .Where(p => p.Id != Environment.ProcessId && p.MainWindowTitle == "Copilot App")
-                .FirstOrDefault();
-
-            if (existing != null)
+            // Use a Mutex to detect if another MainForm is already open
+            using var mainFormMutex = new Mutex(true, MainFormMutexName, out bool isNewInstance);
+            if (!isNewInstance)
             {
                 // Signal the existing instance to switch tab and bring to front
                 try
@@ -137,7 +135,7 @@ internal class Program
                     File.WriteAllText(s_signalFile, desiredTab.ToString());
                 }
                 catch { }
-                LogService.Log($"Signaled existing MainForm (PID {existing.Id}) to switch to tab {desiredTab}", s_logFile);
+                LogService.Log($"Signaled existing MainForm to switch to tab {desiredTab}", s_logFile);
                 return;
             }
 
@@ -185,6 +183,19 @@ internal class Program
         // For new sessions (no explicit workDir, not resuming), show MainForm
         if (workDir == null && resumeSessionId == null)
         {
+            // If a MainForm is already open, signal it to show the New Session tab
+            using var newSessionMutex = new Mutex(true, MainFormMutexName, out bool isNew);
+            if (!isNew)
+            {
+                try
+                {
+                    File.WriteAllText(s_signalFile, "0");
+                }
+                catch { }
+                LogService.Log("Signaled existing MainForm to show New Session tab", s_logFile);
+                return;
+            }
+
             var mainForm = new MainForm(initialTab: 1);
             if (mainForm.ShowDialog() == DialogResult.OK && mainForm.NewSessionCwd != null)
             {

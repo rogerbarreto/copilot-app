@@ -847,13 +847,13 @@ internal class MainForm : Form
 
         if (tabIndex == 0)
         {
-            this.RefreshNewSessionList();
+            await this.RefreshNewSessionListAsync().ConfigureAwait(true);
         }
 
         if (tabIndex == 1)
         {
             this._cachedSessions = await Task.Run(() => LoadNamedSessions()).ConfigureAwait(true);
-            var snapshot = this._activeTracker.Refresh(this._cachedSessions);
+            var snapshot = await Task.Run(() => this._activeTracker.Refresh(this._cachedSessions)).ConfigureAwait(true);
             this._gridController.Populate(this._cachedSessions, snapshot, this._searchBox.Text);
         }
 
@@ -893,17 +893,17 @@ internal class MainForm : Form
     {
         var sessions = await Task.Run(() => LoadNamedSessions()).ConfigureAwait(true);
         this._cachedSessions = sessions;
-        var snapshot = this._activeTracker.Refresh(this._cachedSessions);
+        var snapshot = await Task.Run(() => this._activeTracker.Refresh(this._cachedSessions)).ConfigureAwait(true);
         this._gridController.Populate(this._cachedSessions, snapshot, this._searchBox.Text);
 
         this._loadingOverlay.Visible = false;
 
-        this.RefreshNewSessionList();
+        await this.RefreshNewSessionListAsync().ConfigureAwait(true);
     }
 
-    private void RefreshNewSessionList()
+    private async Task RefreshNewSessionListAsync()
     {
-        var data = this._sessionDataService.LoadAll(Program.SessionStateDir, Program.PidRegistryFile);
+        var data = await Task.Run(() => this._sessionDataService.LoadAll(Program.SessionStateDir, Program.PidRegistryFile)).ConfigureAwait(true);
         this._newSessionTabBuilder.Populate(this._cwdListView, this._cwdGitStatus, data);
     }
 

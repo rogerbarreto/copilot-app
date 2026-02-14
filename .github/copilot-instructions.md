@@ -2,7 +2,6 @@
 
 ## Git Commits
 
-- **Never** add `Co-authored-by` trailers to commits.
 - Keep commit messages concise and descriptive.
 
 ## Code Style
@@ -18,6 +17,8 @@
 
 ## Release
 
+- Follows [Semantic Versioning](https://semver.org/): patch for bug fixes, minor for new features. No major bumps until GA.
+- When unsure about version bump type, ask before bumping.
 - Update version in both `CopilotApp.csproj` and `installer.iss`.
 - Update `CHANGELOG.md` before tagging.
 - Push `v<version>` tag to trigger release CI.

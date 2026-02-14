@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.6.4] - 2026-02-14
+
+### Fixed
+
+- **Session name not applied on resume** — editing a session name now updates both `name` and `summary` fields in workspace.yaml, so the Copilot CLI picks up the renamed session.
+- **Multiple app instances allowed** — replaced process-name detection with a named Mutex to reliably prevent multiple MainForm windows from opening simultaneously.
+- **UI freeze when loading sessions** — moved session data loading and active status refresh off the UI thread to prevent the waiting cursor freeze on startup.
+
 ## [0.6.3] - 2026-02-14
 
 ### Changed

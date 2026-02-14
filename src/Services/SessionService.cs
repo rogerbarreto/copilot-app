@@ -353,7 +353,7 @@ internal class SessionService
         {
             var lines = File.ReadAllLines(wsFile);
             var updatedLines = new List<string>();
-            bool foundSummary = false, foundCwd = false;
+            bool foundSummary = false, foundCwd = false, foundName = false;
 
             foreach (var line in lines)
             {
@@ -361,6 +361,11 @@ internal class SessionService
                 {
                     updatedLines.Add($"summary: {newSummary}");
                     foundSummary = true;
+                }
+                else if (line.StartsWith("name:"))
+                {
+                    updatedLines.Add($"name: {newSummary}");
+                    foundName = true;
                 }
                 else if (line.StartsWith("cwd:"))
                 {
@@ -376,6 +381,11 @@ internal class SessionService
             if (!foundSummary)
             {
                 updatedLines.Add($"summary: {newSummary}");
+            }
+
+            if (!foundName)
+            {
+                updatedLines.Add($"name: {newSummary}");
             }
 
             if (!foundCwd)

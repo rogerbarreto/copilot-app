@@ -19,7 +19,7 @@
         var sessionDir = Path.Combine(this._tempDir, "session1");
         Directory.CreateDirectory(sessionDir);
         File.WriteAllText(Path.Combine(sessionDir, "workspace.yaml"),
-            "id: session1\ncwd: C:\\old-path\nsummary: Old name");
+            "id: session1\ncwd: C:\\old-path\nsummary: Old name\nname: Old name");
 
         var result = SessionService.UpdateSession(sessionDir, "New name", "C:\\new-path");
 
@@ -27,6 +27,7 @@
         var lines = File.ReadAllLines(Path.Combine(sessionDir, "workspace.yaml"));
         Assert.Contains("id: session1", lines);
         Assert.Contains("summary: New name", lines);
+        Assert.Contains("name: New name", lines);
         Assert.Contains("cwd: C:\\new-path", lines);
     }
 
@@ -44,6 +45,7 @@
         var lines = File.ReadAllLines(Path.Combine(sessionDir, "workspace.yaml"));
         Assert.Contains("id: session2", lines);
         Assert.Contains("summary: Added summary", lines);
+        Assert.Contains("name: Added summary", lines);
         Assert.Contains("cwd: C:\\added", lines);
     }
 
@@ -53,7 +55,7 @@
         var sessionDir = Path.Combine(this._tempDir, "session3");
         Directory.CreateDirectory(sessionDir);
         File.WriteAllText(Path.Combine(sessionDir, "workspace.yaml"),
-            "id: session3\ncwd: C:\\old\nsummary: Old\ncustomField: keep-me");
+            "id: session3\ncwd: C:\\old\nsummary: Old\nname: Old\ncustomField: keep-me");
 
         var result = SessionService.UpdateSession(sessionDir, "Updated", "C:\\updated");
 
@@ -61,6 +63,7 @@
         var lines = File.ReadAllLines(Path.Combine(sessionDir, "workspace.yaml"));
         Assert.Contains("customField: keep-me", lines);
         Assert.Contains("summary: Updated", lines);
+        Assert.Contains("name: Updated", lines);
         Assert.Contains("cwd: C:\\updated", lines);
     }
 
