@@ -1,7 +1,7 @@
 ﻿
 using System;
 
-namespace CopilotApp.Models;
+namespace CopilotBooster.Models;
 
 /// <summary>
 /// Represents a saved session with metadata for display and selection.

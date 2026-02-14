@@ -4,18 +4,30 @@
   <img src="images/logo.png" alt="Copilot Booster Logo" width="200">
 </p>
 
-> A Windows taskbar companion for GitHub Copilot CLI — manage sessions, terminals, IDEs, and browser workspaces from a single pinned icon.
+> Run multiple Copilot agents in parallel. One taskbar icon to manage them all.
 
-**Copilot Booster** turns [GitHub Copilot CLI](https://docs.github.com/en/copilot/github-copilot-in-the-cli) into a first-class desktop experience. Pin it to your taskbar and get instant access to new sessions, session history, active context tracking across terminals, Copilot CLI, IDEs, and Edge browser — all without touching config files.
+Modern AI-assisted development isn't one task at a time — it's **multiple Copilot agents running simultaneously** across different repos, branches, and contexts. But juggling terminals, IDEs, and browsers for each agent creates a context-switching tax that kills the productivity gains.
+
+**Copilot Booster** eliminates that overhead. Pin it to your taskbar and get **complete isolation per session** — each Copilot agent gets its own terminal, IDE workspace, and browser instance, all tracked and instantly accessible from a single icon. No more hunting for the right window. No more losing context. Just click and focus.
 
 <p align="center">
   <a href="../../releases/latest"><img src="https://img.shields.io/github/v/release/rogerbarreto/copilot-app?label=Latest%20Release&style=for-the-badge" alt="Latest Release"></a>
 </p>
 
 <p align="center">
-  <a href="../../releases/latest/download/CopilotApp-Setup.exe">📦 <b>Download Installer</b></a> &nbsp;|&nbsp;
-  <a href="../../releases/latest/download/CopilotApp-win-x64.zip">📁 <b>Download Portable ZIP</b></a>
+  <a href="../../releases/latest/download/CopilotBooster-Setup.exe">📦 <b>Download Installer</b></a> &nbsp;|&nbsp;
+  <a href="../../releases/latest/download/CopilotBooster-win-x64.zip">📁 <b>Download Portable ZIP</b></a>
 </p>
+
+### Why Copilot Booster?
+
+| Without Copilot Booster | With Copilot Booster |
+|---|---|
+| Alt-Tab through dozens of windows to find the right terminal | Click the session → focus the exact terminal, IDE, or browser |
+| Manually track which agent is working on what | Live Active column shows Terminal, Copilot CLI, IDE, and Edge status per session |
+| One shared browser for all research | Isolated Edge workspaces per session — tabs don't bleed across tasks |
+| Context-switch between repos by cd-ing around | Git worktree workspaces give each agent its own branch and directory |
+| Lose track of parallel agents after a restart | Terminal and browser persistence survives app restarts |
 
 ---
 
@@ -130,7 +142,7 @@ Create a workspace from two places:
 - **New Session tab** → right-click a Git directory → **New Copilot Session Workspace**
 - **Existing Sessions tab** → right-click a session → **Open as New Copilot Session Workspace**
 
-Workspaces are stored in `%APPDATA%\CopilotApp\Workspaces\` and named after the repository and branch (e.g., `myrepo-feature-xyz`).
+Workspaces are stored in `%APPDATA%\CopilotBooster\Workspaces\` and named after the repository and branch (e.g., `myrepo-feature-xyz`).
 
 ---
 
@@ -166,15 +178,15 @@ Copilot Booster checks for new versions on startup via the GitHub Releases API. 
 
 #### Option A: Installer (Recommended)
 
-Download **`CopilotApp-Setup.exe`** from the [latest release](../../releases/latest) and run it.
+Download **`CopilotBooster-Setup.exe`** from the [latest release](../../releases/latest) and run it.
 
-- Installs to `%APPDATA%\CopilotApp\` — no admin required
+- Installs to `%APPDATA%\CopilotBooster\` — no admin required
 - Creates Start Menu and optional desktop shortcuts
 - Includes uninstaller (Add/Remove Programs)
 
 #### Option B: Portable EXE
 
-Download **`CopilotApp-win-x64.zip`** from the [latest release](../../releases/latest), extract it anywhere, and run `CopilotApp.exe`.
+Download **`CopilotBooster-win-x64.zip`** from the [latest release](../../releases/latest), extract it anywhere, and run `CopilotBooster.exe`.
 
 #### Option C: Build from Source
 
@@ -186,7 +198,7 @@ cd copilot-app
 
 ### Pin to Taskbar
 
-1. Run `CopilotApp.exe` from the publish folder
+1. Run `CopilotBooster.exe` from the publish folder
 2. Right-click the icon in the taskbar → **Pin to taskbar**
 3. Right-click the pinned icon → **Settings** to configure your tools and directories
 
@@ -200,9 +212,9 @@ dotnet publish -c Release -o ..\publish
 ### Build Installer (requires [Inno Setup](https://jrsoftware.org/isdownload.php))
 
 ```powershell
-dotnet publish src/CopilotApp.csproj -c Release -o publish
+dotnet publish src/CopilotBooster.csproj -c Release -o publish
 iscc installer.iss
-# Output: installer-output\CopilotApp-Setup.exe
+# Output: installer-output\CopilotBooster-Setup.exe
 ```
 
 ---
@@ -210,12 +222,12 @@ iscc installer.iss
 ## 💻 Command Line
 
 ```powershell
-CopilotApp.exe                        # Open New Session tab
-CopilotApp.exe "C:\my\project"        # New session in a specific directory
-CopilotApp.exe --resume <sessionId>   # Resume a session in its original CWD
-CopilotApp.exe --open-existing        # Open the session browser
-CopilotApp.exe --open-ide <sessionId> # Open IDE picker for a session
-CopilotApp.exe --settings             # Open settings
+CopilotBooster.exe                        # Open New Session tab
+CopilotBooster.exe "C:\my\project"        # New session in a specific directory
+CopilotBooster.exe --resume <sessionId>   # Resume a session in its original CWD
+CopilotBooster.exe --open-existing        # Open the session browser
+CopilotBooster.exe --open-ide <sessionId> # Open IDE picker for a session
+CopilotBooster.exe --settings             # Open settings
 ```
 
 ---
@@ -223,7 +235,7 @@ CopilotApp.exe --settings             # Open settings
 ## 🏗️ Architecture
 
 ```
-CopilotApp.exe (WinForms, persistent taskbar window)
+CopilotBooster.exe (WinForms, persistent taskbar window)
 ├── Sets AppUserModelID for taskbar grouping
 ├── Registers PID → session mapping in ~/.copilot/active-pids.json
 ├── Launches copilot.exe with --allow-tool and --add-dir from settings

@@ -26,7 +26,7 @@ jobs:
         run: dotnet format copilot-app.sln --verify-no-changes --verbosity normal
 
       - name: Test
-        run: dotnet test tests/CopilotApp.Tests.csproj -c Release --nologo --verbosity normal
+        run: dotnet test tests/CopilotBooster.Tests.csproj -c Release --nologo --verbosity normal
 
   release:
     needs: test
@@ -40,10 +40,10 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Publish
-        run: dotnet publish src/CopilotApp.csproj -c Release -r win-x64 -o publish --nologo
+        run: dotnet publish src/CopilotBooster.csproj -c Release -r win-x64 -o publish --nologo
 
       - name: Create release archive
-        run: Compress-Archive -Path publish/* -DestinationPath CopilotApp-win-x64.zip
+        run: Compress-Archive -Path publish/* -DestinationPath CopilotBooster-win-x64.zip
 
       - name: Install Inno Setup
         run: choco install innosetup --yes --no-progress
@@ -69,7 +69,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            CopilotApp-win-x64.zip
-            installer-output/CopilotApp-Setup.exe
+            CopilotBooster-win-x64.zip
+            installer-output/CopilotBooster-Setup.exe
           body_path: release-notes.md
           generate_release_notes: false

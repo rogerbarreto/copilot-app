@@ -4,9 +4,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
-using CopilotApp.Services;
+using CopilotBooster.Services;
 
-namespace CopilotApp.Forms;
+namespace CopilotBooster.Forms;
 
 /// <summary>
 /// Provides a picker dialog for opening a session's working directory or repository in a configured IDE.

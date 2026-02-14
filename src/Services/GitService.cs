@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace CopilotApp.Services;
+namespace CopilotBooster.Services;
 
 /// <summary>
 /// Provides Git-related operations such as branch listing, worktree creation, and repository detection.
@@ -106,12 +106,12 @@ internal static class GitService
     }
 
     /// <summary>
-    /// Gets the root directory for CopilotApp workspaces.
+    /// Gets the root directory for CopilotBooster workspaces.
     /// </summary>
     /// <returns>The full path to the workspaces directory under the user's application data folder.</returns>
     internal static string GetWorkspacesDir()
     {
-        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CopilotApp", "Workspaces");
+        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CopilotBooster", "Workspaces");
     }
 
     /// <summary>

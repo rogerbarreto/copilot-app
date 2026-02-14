@@ -4,9 +4,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using CopilotApp.Models;
+using CopilotBooster.Models;
 
-namespace CopilotApp.Services;
+namespace CopilotBooster.Services;
 
 /// <summary>
 /// Provides operations for discovering and managing Copilot sessions.
@@ -74,7 +74,7 @@ internal class SessionService
             try
             {
                 var proc = Process.GetProcessById(pid);
-                if (proc.ProcessName != "CopilotApp")
+                if (proc.ProcessName != "CopilotBooster")
                 {
                     toRemove.Add(pidStr);
                     continue;

@@ -1,4 +1,4 @@
-﻿namespace CopilotApp.Models;
+﻿namespace CopilotBooster.Models;
 
 /// <summary>
 /// Represents a tracked process (terminal or IDE) associated with a session.

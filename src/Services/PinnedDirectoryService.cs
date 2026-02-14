@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 
-namespace CopilotApp.Services;
+namespace CopilotBooster.Services;
 
 /// <summary>
 /// Manages pinned directories persisted in ~/.copilot/pinned-directories.json.

@@ -4,15 +4,15 @@
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>copilot.ico</ApplicationIcon>
-    <AssemblyName>CopilotApp</AssemblyName>
-    <Version>0.6.4</Version>
+    <AssemblyName>CopilotBooster</AssemblyName>
+    <Version>0.7.0</Version>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>false</SelfContained>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <InternalsVisibleTo Include="CopilotApp.Tests" />
+    <InternalsVisibleTo Include="CopilotBooster.Tests" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="copilot.ico" />

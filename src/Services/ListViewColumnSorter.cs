@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Windows.Forms;
 
-namespace CopilotApp.Services;
+namespace CopilotBooster.Services;
 
 internal class ListViewColumnSorter : IComparer
 {

@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using CopilotApp.Models;
+using CopilotBooster.Models;
 
-namespace CopilotApp.Services;
+namespace CopilotBooster.Services;
 
 /// <summary>
 /// Holds all session-related data produced by a single pass over workspace files.

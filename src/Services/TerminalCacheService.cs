@@ -2,7 +2,7 @@
 using System.IO;
 using System.Text.Json;
 
-namespace CopilotApp.Services;
+namespace CopilotBooster.Services;
 
 /// <summary>
 /// Manages terminal PID caching for tracking running terminal sessions across app restarts.

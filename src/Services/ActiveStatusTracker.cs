@@ -4,9 +4,9 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using CopilotApp.Models;
+using CopilotBooster.Models;
 
-namespace CopilotApp.Services;
+namespace CopilotBooster.Services;
 
 /// <summary>
 /// Result snapshot returned by <see cref="ActiveStatusTracker.Refresh"/>.

@@ -50,7 +50,7 @@
     {
         var result = GitService.GetWorkspacesDir();
 
-        Assert.Contains("CopilotApp", result);
+        Assert.Contains("CopilotBooster", result);
         Assert.Contains("Workspaces", result);
     }
 

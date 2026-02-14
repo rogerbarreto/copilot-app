@@ -1,4 +1,4 @@
-﻿namespace CopilotApp.Tests.Services;
+﻿namespace CopilotBooster.Tests.Services;
 
 public class StripLeadingEmojiTests
 {

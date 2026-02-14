@@ -2,9 +2,9 @@
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
-using CopilotApp.Services;
+using CopilotBooster.Services;
 
-namespace CopilotApp.Forms;
+namespace CopilotBooster.Forms;
 
 /// <summary>
 /// Provides a modal dialog for creating a new git worktree workspace.

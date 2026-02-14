@@ -6,7 +6,7 @@ using System.Windows.Forms;
 using Microsoft.WindowsAPICodePack.Shell;
 using Microsoft.WindowsAPICodePack.Taskbar;
 
-namespace CopilotApp.Services;
+namespace CopilotBooster.Services;
 
 /// <summary>
 /// Manages Windows taskbar jump list entries for Copilot sessions.

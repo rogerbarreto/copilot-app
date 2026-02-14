@@ -3,7 +3,7 @@
     Installs the Copilot Booster Launcher.
 
 .DESCRIPTION
-    Builds the CopilotApp.exe and optionally sets the default work directory.
+    Builds the CopilotBooster.exe and optionally sets the default work directory.
     Settings (allowed tools, directories, IDEs) are managed via the Settings UI in the app itself.
 
 .PARAMETER PublishDir
@@ -34,7 +34,7 @@ if (-not (Get-Command copilot.exe -ErrorAction SilentlyContinue)) {
 }
 
 # 2. Build
-Write-Host "Building CopilotApp..." -ForegroundColor Cyan
+Write-Host "Building CopilotBooster..." -ForegroundColor Cyan
 Push-Location $SrcDir
 dotnet publish -c Release -o $PublishDir --nologo -v quiet
 if ($LASTEXITCODE -ne 0) {
@@ -68,10 +68,10 @@ if ($WorkDir) {
 # 4. Summary
 Write-Host ""
 Write-Host "=== Installation Complete ===" -ForegroundColor Green
-Write-Host "Executable:  $PublishDir\CopilotApp.exe"
+Write-Host "Executable:  $PublishDir\CopilotBooster.exe"
 Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Yellow
-Write-Host "  1. Run CopilotApp.exe"
+Write-Host "  1. Run CopilotBooster.exe"
 Write-Host "  2. Right-click its taskbar icon and select 'Pin to taskbar'"
 Write-Host "  3. Right-click the pinned icon to access jump list:"
 Write-Host "     - New Copilot Session"
@@ -80,4 +80,4 @@ Write-Host "     - Settings (configure allowed tools, directories, IDEs)"
 Write-Host ""
 Write-Host "To configure settings:" -ForegroundColor Yellow
 Write-Host "  Right-click pinned icon → Settings"
-Write-Host "  Or run: CopilotApp.exe --settings"
+Write-Host "  Or run: CopilotBooster.exe --settings"

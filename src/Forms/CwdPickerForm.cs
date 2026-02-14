@@ -5,9 +5,9 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
-using CopilotApp.Services;
+using CopilotBooster.Services;
 
-namespace CopilotApp.Forms;
+namespace CopilotBooster.Forms;
 
 /// <summary>
 /// Provides a dialog for selecting a working directory from previously used directories or browsing for a new one.

@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace CopilotApp.Services;
+namespace CopilotBooster.Services;
 
 /// <summary>
 /// Checks for application updates via the GitHub Releases API.
@@ -19,7 +19,7 @@ internal sealed class UpdateService
     {
         DefaultRequestHeaders =
         {
-            { "User-Agent", "CopilotApp" },
+            { "User-Agent", "CopilotBooster" },
             { "Accept", "application/vnd.github+json" }
         },
         Timeout = TimeSpan.FromSeconds(10)
@@ -87,7 +87,7 @@ internal sealed class UpdateService
     /// </summary>
     public static async Task DownloadAndLaunchInstallerAsync(string downloadUrl)
     {
-        var tempPath = Path.Combine(Path.GetTempPath(), "CopilotApp-Setup.exe");
+        var tempPath = Path.Combine(Path.GetTempPath(), "CopilotBooster-Setup.exe");
 
         using (var response = await s_httpClient.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false))
         {

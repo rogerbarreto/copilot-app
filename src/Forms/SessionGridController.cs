@@ -4,10 +4,10 @@ using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-using CopilotApp.Models;
-using CopilotApp.Services;
+using CopilotBooster.Models;
+using CopilotBooster.Services;
 
-namespace CopilotApp.Forms;
+namespace CopilotBooster.Forms;
 
 /// <summary>
 /// Controls the session DataGridView: population, painting, cursor, and click handling.

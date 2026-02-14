@@ -7,10 +7,10 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using CopilotApp.Models;
-using CopilotApp.Services;
+using CopilotBooster.Models;
+using CopilotBooster.Services;
 
-namespace CopilotApp.Forms;
+namespace CopilotBooster.Forms;
 
 /// <summary>
 /// Main application form providing session management and settings configuration.

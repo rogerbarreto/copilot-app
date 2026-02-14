@@ -8,11 +8,11 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
-using CopilotApp.Forms;
-using CopilotApp.Models;
-using CopilotApp.Services;
+using CopilotBooster.Forms;
+using CopilotBooster.Models;
+using CopilotBooster.Services;
 
-[assembly: InternalsVisibleTo("CopilotApp.Tests")]
+[assembly: InternalsVisibleTo("CopilotBooster.Tests")]
 
 /// <summary>
 /// Entry point for the Copilot launcher application.
@@ -24,7 +24,7 @@ internal class Program
 
     private const string UpdaterMutexName = "Global\\CopilotJumpListUpdater";
     private const string UpdateLockName = "Global\\CopilotJumpListUpdateLock";
-    private const string MainFormMutexName = "Local\\CopilotAppMainForm";
+    private const string MainFormMutexName = "Local\\CopilotBoosterMainForm";
 
     private static readonly string s_copilotDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".copilot");
     /// <summary>

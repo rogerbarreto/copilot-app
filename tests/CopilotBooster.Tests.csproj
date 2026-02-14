@@ -17,14 +17,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\CopilotApp.csproj" />
+    <ProjectReference Include="..\src\CopilotBooster.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Xunit" />
-    <Using Include="CopilotApp.Forms" />
-    <Using Include="CopilotApp.Models" />
-    <Using Include="CopilotApp.Services" />
+    <Using Include="CopilotBooster.Forms" />
+    <Using Include="CopilotBooster.Models" />
+    <Using Include="CopilotBooster.Services" />
   </ItemGroup>
 
 </Project>

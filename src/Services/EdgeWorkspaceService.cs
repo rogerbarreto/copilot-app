@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Windows.Automation;
 using Microsoft.Win32;
 
-namespace CopilotApp.Services;
+namespace CopilotBooster.Services;
 
 /// <summary>
 /// Manages Edge browser workspace windows identified by a unique GUID in the tab title.

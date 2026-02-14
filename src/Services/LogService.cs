@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace CopilotApp.Services;
+namespace CopilotBooster.Services;
 
 /// <summary>
 /// Provides simple file-based logging with timestamped messages.

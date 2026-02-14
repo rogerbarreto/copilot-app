@@ -3,7 +3,7 @@ using System.IO;
 using System.Threading.Tasks;
 using GitHub.Copilot.SDK;
 
-namespace CopilotApp.Services;
+namespace CopilotBooster.Services;
 
 /// <summary>
 /// Creates Copilot sessions programmatically using the GitHub Copilot SDK.

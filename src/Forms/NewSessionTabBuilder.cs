@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Windows.Forms;
-using CopilotApp.Services;
+using CopilotBooster.Services;
 
-namespace CopilotApp.Forms;
+namespace CopilotBooster.Forms;
 
 /// <summary>
 /// Manages the New Session tab's CWD list and column sorting.

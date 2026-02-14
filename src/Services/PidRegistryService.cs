@@ -2,7 +2,7 @@
 using System.IO;
 using System.Text.Json;
 
-namespace CopilotApp.Services;
+namespace CopilotBooster.Services;
 
 /// <summary>
 /// Manages process ID registration for tracking running Copilot application instances.

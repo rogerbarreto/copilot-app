@@ -88,7 +88,7 @@ public sealed class GetActiveSessionsTests : IDisposable
 
         var result = SessionService.GetActiveSessions(this._pidFile, this._sessionStateDir);
 
-        // Process is running but not CopilotApp, so it gets removed
+        // Process is running but not CopilotBooster, so it gets removed
         // OR sessionId is null so it gets skipped — either way empty
         Assert.Empty(result);
     }
@@ -113,7 +113,7 @@ public sealed class GetActiveSessionsTests : IDisposable
     {
         // Verifies that copilotPid in the registry doesn't cause parsing errors.
         // Full integration (CopilotPid populated on SessionInfo) requires a running
-        // CopilotApp process and is covered by manual/integration testing.
+        // CopilotBooster process and is covered by manual/integration testing.
         var fakePid = 99999;
         var registry = new Dictionary<string, object>
         {

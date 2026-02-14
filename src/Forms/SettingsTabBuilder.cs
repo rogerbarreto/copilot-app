@@ -2,9 +2,9 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Windows.Forms;
-using CopilotApp.Models;
+using CopilotBooster.Models;
 
-namespace CopilotApp.Forms;
+namespace CopilotBooster.Forms;
 
 /// <summary>
 /// Helper methods for building and managing settings tab UI controls.

@@ -5,7 +5,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace CopilotApp.Models;
+namespace CopilotBooster.Models;
 
 /// <summary>
 /// Represents the persisted launcher configuration settings.

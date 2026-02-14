@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 
-namespace CopilotApp.Services;
+namespace CopilotBooster.Services;
 
 internal class CopilotLocator
 {

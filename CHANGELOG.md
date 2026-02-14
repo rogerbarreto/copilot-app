@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.7.0] - 2026-02-14
+
+### Changed
+
+- **Renamed to Copilot Booster** — the project identity is now `CopilotBooster` across namespaces, assemblies, executables, installer, AppData paths, and all documentation.
+- **New Session tab revamp** — replaced the bottom button bar with a right-click context menu matching the Existing Sessions tab pattern. All actions (New Session, New Workspace, Add/Remove Directory) are accessible from the context menu.
+- **Session name prompts** — creating a new session or workspace now prompts for a session name before launch.
+- **Default tab is Existing Sessions** — clicking the taskbar icon opens the Existing Sessions tab; the jump list "New Copilot Session" opens the New Session tab.
+- **Improved README pitch** — rewrote the introduction to highlight parallel agent productivity and session isolation.
+
+### Added
+
+- **GitHub Copilot SDK integration** — sessions are created programmatically via `GitHub.Copilot.SDK` with working directory and name support.
+- **Pinned directories** — manually added directories persist in `~/.copilot/pinned-directories.json` and appear in the New Session tab even with zero sessions.
+- **Loading overlay** — the New Session tab shows "Loading directories..." while data is being fetched.
+- **New app icon** — auto-cropped multi-resolution icon from the new logo (16–256px).
+- **`--new-session` CLI flag** — opens the New Session tab directly; used by the jump list.
+
+### Fixed
+
+- **Workspace menu visibility** — "Open as New Copilot Session Workspace" now correctly appears only for Git-enabled directories.
+
 ## [0.6.4] - 2026-02-14
 
 ### Fixed
@@ -89,7 +111,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- **Git workspace creation** — create isolated [git worktrees](https://git-scm.com/docs/git-worktree) from the New Session tab ("Create Workspace" button) or the Existing Sessions dropdown ("Open as New Session Workspace"). Each workspace gets its own branch and directory under `%APPDATA%\CopilotApp\Workspaces\`.
+- **Git workspace creation** — create isolated [git worktrees](https://git-scm.com/docs/git-worktree) from the New Session tab ("Create Workspace" button) or the Existing Sessions dropdown ("Open as New Session Workspace"). Each workspace gets its own branch and directory under `%APPDATA%\CopilotBooster\Workspaces\`.
 - **Git column in directory picker** — the New Session tab now shows a "Git" column indicating whether each directory is inside a Git repository (including worktrees).
 - **Session count column** — directory picker column renamed to "# Sessions created" for clarity.
 - **Git indicator on sessions** — sessions with Git-enabled working directories show "- Git" in the date column of the Existing Sessions tab.

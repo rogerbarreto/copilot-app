@@ -1,4 +1,4 @@
-﻿namespace CopilotApp.Models;
+﻿namespace CopilotBooster.Models;
 
 /// <summary>
 /// Represents the parsed command-line arguments for the launcher.

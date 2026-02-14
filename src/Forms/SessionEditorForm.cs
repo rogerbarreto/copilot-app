@@ -3,7 +3,7 @@ using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
 
-namespace CopilotApp.Forms;
+namespace CopilotBooster.Forms;
 
 /// <summary>
 /// Provides a modal dialog for editing session name and working directory.

@@ -1,4 +1,4 @@
-﻿namespace CopilotApp.Models;
+﻿namespace CopilotBooster.Models;
 
 /// <summary>
 /// Represents information about a running Copilot session.

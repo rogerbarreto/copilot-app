@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
-namespace CopilotApp.Services;
+namespace CopilotBooster.Services;
 
 /// <summary>
 /// Launches terminal windows in a specified working directory with trackable titles.
